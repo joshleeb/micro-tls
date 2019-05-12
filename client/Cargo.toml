@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 libc = { version = "0.2.53", default-features = false }
+managed = "0.7.1"
 
 [[test]]
 name = "integration_tests"
