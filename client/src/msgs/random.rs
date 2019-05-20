@@ -45,7 +45,8 @@ mod tests {
 
         #[test]
         fn not_enough_bytes() {
-            let mut dec = Decoder::new(vec![0; 31]);
+            let bytes = [0; 31];
+            let mut dec = Decoder::new(&bytes);
             let random = Random::decode(&mut dec);
 
             assert!(random.is_none());
@@ -53,7 +54,8 @@ mod tests {
 
         #[test]
         fn multiple_bytes() {
-            let mut dec = Decoder::new(vec![0; 32]);
+            let bytes = [0; 32];
+            let mut dec = Decoder::new(&bytes);
             let random = Random::decode(&mut dec).unwrap();
 
             assert_eq!(random, Random::empty());

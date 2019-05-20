@@ -1,11 +1,10 @@
 use crate::msgs::{
-    self,
     enums::{CipherSuite, CompressionMethod, ExtensionType, ProtocolVersion},
     random::Random,
     session::SessionId,
+    slice::Slice,
     Codec, Decoder, Encoder,
 };
-use managed::ManagedSlice;
 
 // TODO: HandshakePayload should have an Unknown(Payload) variant
 pub enum HandshakePayload<'a> {
@@ -24,9 +23,9 @@ pub struct ClientHelloPayload<'a> {
     pub legacy_version: ProtocolVersion,
     pub random: Random,
     pub legacy_session_id: SessionId,
-    pub cipher_suites: ManagedSlice<'a, CipherSuite>,
-    pub legacy_compression_methods: ManagedSlice<'a, CompressionMethod>,
-    pub extensions: ManagedSlice<'a, ExtensionType>,
+    pub cipher_suites: Slice<'a, CipherSuite>,
+    pub legacy_compression_methods: Slice<'a, CompressionMethod>,
+    pub extensions: Slice<'a, ExtensionType>,
 }
 
 impl<'a> Codec<'a> for ClientHelloPayload<'a> {
@@ -36,25 +35,17 @@ impl<'a> Codec<'a> for ClientHelloPayload<'a> {
         self.legacy_session_id.encode(enc);
         self.cipher_suites.encode(enc);
         self.legacy_compression_methods.encode(enc);
-
-        if !self.extensions.is_empty() {
-            self.extensions.encode(enc);
-        }
+        self.extensions.encode(enc);
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
-        let mut payload = ClientHelloPayload {
+        Some(ClientHelloPayload {
             legacy_version: ProtocolVersion::decode(dec)?,
             random: Random::decode(dec)?,
             legacy_session_id: SessionId::decode(dec)?,
-            cipher_suites: ManagedSlice::decode(dec)?,
-            legacy_compression_methods: ManagedSlice::decode(dec)?,
-            extensions: [].into(),
-        };
-
-        if !dec.is_complete() {
-            payload.extensions = ManagedSlice::decode(dec)?;
-        }
-        Some(payload)
+            cipher_suites: Slice::decode(dec)?,
+            legacy_compression_methods: Slice::decode(dec)?,
+            extensions: Slice::decode(dec)?,
+        })
     }
 }

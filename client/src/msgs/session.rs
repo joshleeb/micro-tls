@@ -80,7 +80,17 @@ mod tests {
 
         #[test]
         fn empty() {
-            let mut dec = Decoder::new(vec![0]);
+            let bytes = [];
+            let mut dec = Decoder::new(&bytes);
+            let session_id = SessionId::decode(&mut dec);
+
+            assert!(session_id.is_none());
+        }
+
+        #[test]
+        fn zero_length() {
+            let bytes = [0];
+            let mut dec = Decoder::new(&bytes);
             let session_id = SessionId::decode(&mut dec).unwrap();
 
             assert_eq!(session_id, SessionId::empty());
@@ -88,7 +98,8 @@ mod tests {
 
         #[test]
         fn invalid_length() {
-            let mut dec = Decoder::new(vec![33]);
+            let bytes = [33];
+            let mut dec = Decoder::new(&bytes);
             let session_id = SessionId::decode(&mut dec);
 
             assert!(session_id.is_none());
@@ -96,7 +107,8 @@ mod tests {
 
         #[test]
         fn not_enough_bytes() {
-            let mut dec = Decoder::new(vec![2, 99]);
+            let bytes = [2, 99];
+            let mut dec = Decoder::new(&bytes);
             let session_id = SessionId::decode(&mut dec);
 
             assert!(session_id.is_none());
@@ -104,7 +116,8 @@ mod tests {
 
         #[test]
         fn single_byte() {
-            let mut dec = Decoder::new(vec![1, 99]);
+            let bytes = [1, 99];
+            let mut dec = Decoder::new(&bytes);
             let session_id = SessionId::decode(&mut dec).unwrap();
 
             let mut data = [0; 32];
@@ -115,7 +128,8 @@ mod tests {
 
         #[test]
         fn multiple_bytes() {
-            let mut dec = Decoder::new(vec![3, 99, 98, 97]);
+            let bytes = [3, 99, 98, 97];
+            let mut dec = Decoder::new(&bytes);
             let session_id = SessionId::decode(&mut dec).unwrap();
 
             let mut data = [0; 32];
