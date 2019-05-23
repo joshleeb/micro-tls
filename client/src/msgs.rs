@@ -5,11 +5,11 @@ mod macros;
 
 pub mod enums;
 
+mod array;
 mod handshake;
 mod primitive;
 mod random;
 mod session;
-mod slice;
 
 pub trait Codec<'a>: Sized {
     fn encode(&self, _enc: &mut Encoder<'a>);
@@ -110,6 +110,10 @@ impl<'a> Decoder<'a> {
 
     pub fn remaining(&self) -> usize {
         self.bytes.as_ref().len() - self.offset
+    }
+
+    pub fn as_bytes(&self) -> &'a [u8] {
+        &self.bytes
     }
 
     /// Returns offset before the bump.

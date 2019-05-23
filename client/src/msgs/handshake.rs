@@ -1,8 +1,8 @@
 use crate::msgs::{
+    array::Array,
     enums::{CipherSuite, CompressionMethod, ExtensionType, ProtocolVersion},
     random::Random,
     session::SessionId,
-    slice::Slice,
     Codec, Decoder, Encoder,
 };
 
@@ -23,9 +23,9 @@ pub struct ClientHelloPayload<'a> {
     pub legacy_version: ProtocolVersion,
     pub random: Random,
     pub legacy_session_id: SessionId,
-    pub cipher_suites: Slice<'a, CipherSuite>,
-    pub legacy_compression_methods: Slice<'a, CompressionMethod>,
-    pub extensions: Slice<'a, ExtensionType>,
+    pub cipher_suites: Array<'a, CipherSuite>,
+    pub legacy_compression_methods: Array<'a, CompressionMethod>,
+    pub extensions: Array<'a, ExtensionType>,
 }
 
 impl<'a> Codec<'a> for ClientHelloPayload<'a> {
@@ -43,9 +43,9 @@ impl<'a> Codec<'a> for ClientHelloPayload<'a> {
             legacy_version: ProtocolVersion::decode(dec)?,
             random: Random::decode(dec)?,
             legacy_session_id: SessionId::decode(dec)?,
-            cipher_suites: Slice::decode(dec)?,
-            legacy_compression_methods: Slice::decode(dec)?,
-            extensions: Slice::decode(dec)?,
+            cipher_suites: Array::decode(dec)?,
+            legacy_compression_methods: Array::decode(dec)?,
+            extensions: Array::decode(dec)?,
         })
     }
 }
