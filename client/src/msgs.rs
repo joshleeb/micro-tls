@@ -1,11 +1,9 @@
 use managed::ManagedSlice;
 
-#[macro_use]
-mod macros;
-
 pub mod enums;
 
 mod array;
+mod extension;
 mod handshake;
 mod primitive;
 mod random;

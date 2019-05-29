@@ -6,6 +6,7 @@ pub mod iter;
 
 mod item;
 
+#[derive(Clone)]
 pub struct Array<'a, T: Codec<'a> + CodecLength<'a>> {
     len: usize,
     items: Items<'a, T>,
@@ -71,6 +72,7 @@ where
     }
 }
 
+// TODO: Improve msgs::array tests.
 #[cfg(test)]
 mod tests {
     use super::*;

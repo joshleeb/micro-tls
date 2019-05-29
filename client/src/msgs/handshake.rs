@@ -1,6 +1,7 @@
 use crate::msgs::{
     array::Array,
     enums::{CipherSuite, CompressionMethod, ExtensionType, ProtocolVersion},
+    extension::Extension,
     random::Random,
     session::SessionId,
     Codec, Decoder, Encoder,
@@ -26,7 +27,7 @@ pub struct ClientHelloPayload<'a> {
     pub cipher_suites: Array<'a, CipherSuite>,
     pub legacy_compression_methods: Array<'a, CompressionMethod>,
     // TODO: ExtensionType might have to be specific to the ClientHelloPayload here.
-    pub extensions: Array<'a, ExtensionType>,
+    pub extensions: Array<'a, Extension<'a>>,
 }
 
 impl<'a> Codec<'a> for ClientHelloPayload<'a> {
@@ -58,7 +59,7 @@ pub struct ServerHelloPayload<'a> {
     pub cipher_suite: CipherSuite,
     pub legacy_compression_method: CompressionMethod,
     // TODO: ExtensionType might have to be specific to the ServerHelloPayload here.
-    pub extensions: Array<'a, ExtensionType>,
+    pub extensions: Array<'a, Extension<'a>>,
 }
 
 impl<'a> Codec<'a> for ServerHelloPayload<'a> {
@@ -88,7 +89,7 @@ pub struct HelloRetryRequest<'a> {
     pub legacy_session_id: SessionId,
     pub cipher_suite: CipherSuite,
     // TODO: ExtensionType might have to be specific to the HelloRetryRequest here.
-    pub extensions: Array<'a, ExtensionType>,
+    pub extensions: Array<'a, Extension<'a>>,
 }
 
 impl<'a> Codec<'a> for HelloRetryRequest<'a> {
