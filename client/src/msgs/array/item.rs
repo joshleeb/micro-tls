@@ -1,6 +1,6 @@
 use crate::msgs::{array::iter::ArrayIter, Codec, Decoder, Encoder};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Items<'a, T: Codec<'a>> {
     Typed(&'a [T]),
     Bytes(&'a [u8]),

@@ -6,7 +6,7 @@ pub mod iter;
 
 mod item;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Array<'a, T: Codec<'a> + CodecLength<'a>> {
     len: usize,
     items: Items<'a, T>,
@@ -41,10 +41,6 @@ where
     T: Codec<'a> + CodecLength<'a>,
 {
     fn encode(&self, enc: &mut Encoder<'a>) {
-        if self.is_empty() {
-            return;
-        }
-
         let n_bytes = self.len() * T::LENGTH;
         T::encode_len(n_bytes, enc);
         self.items.encode(enc);
@@ -97,12 +93,21 @@ mod tests {
         use super::*;
 
         #[test]
-        fn empty() {
+        fn empty_single_byte_size() {
             let items: Array<'_, u8> = Array::from([].as_ref());
             let mut enc = Encoder::new(vec![]);
             items.encode(&mut enc);
 
-            assert!(enc.bytes().is_empty());
+            assert_eq!(enc.bytes(), [0]);
+        }
+
+        #[test]
+        fn empty_multi_bytes_size() {
+            let items: Array<'_, u16> = Array::from([].as_ref());
+            let mut enc = Encoder::new(vec![]);
+            items.encode(&mut enc);
+
+            assert_eq!(enc.bytes(), [0, 0]);
         }
 
         #[test]
@@ -129,12 +134,30 @@ mod tests {
         use std::vec::Vec;
 
         #[test]
-        fn empty() {
-            let bytes = [];
+        fn empty_single_byte_size() {
+            let bytes = [0];
             let mut dec = Decoder::new(&bytes);
             let items: Array<'_, u8> = Array::decode(&mut dec).unwrap();
 
             assert!(items.is_empty());
+        }
+
+        #[test]
+        fn empty_multi_byte_size() {
+            let bytes = [0, 0];
+            let mut dec = Decoder::new(&bytes);
+            let items: Array<'_, u16> = Array::decode(&mut dec).unwrap();
+
+            assert!(items.is_empty());
+        }
+
+        #[test]
+        fn empty_multi_byte_size_invalid() {
+            let bytes = [0];
+            let mut dec = Decoder::new(&bytes);
+            let items: Option<Array<'_, u16>> = Array::decode(&mut dec);
+
+            assert!(items.is_none());
         }
 
         #[test]

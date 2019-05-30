@@ -3,6 +3,12 @@ use crate::msgs::{Codec, Decoder, Encoder};
 #[derive(Debug, Default, PartialEq)]
 pub struct Random([u8; 32]);
 
+impl Random {
+    pub fn empty() -> Self {
+        Self::default()
+    }
+}
+
 impl<'a> Codec<'a> for Random {
     fn encode(&self, enc: &mut Encoder<'a>) {
         enc.append(&self.0);
@@ -17,9 +23,9 @@ impl<'a> Codec<'a> for Random {
     }
 }
 
-impl Random {
-    pub fn empty() -> Self {
-        Self::default()
+impl From<[u8; 32]> for Random {
+    fn from(bytes: [u8; 32]) -> Self {
+        Self(bytes)
     }
 }
 

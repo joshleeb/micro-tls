@@ -68,6 +68,8 @@ msg_enum! {
     CompressionMethod, u8;
     {
         Null => 0x00,
+        Deflate => 0x01,
+        LSZ => 0x40
     }
 }
 
@@ -83,6 +85,35 @@ msg_enum! {
 msg_enum! {
     ExtensionType, u16;
     {
+        SignatureAlgorithms => 0x000d,
         SupportedVersions => 0x002b,
+    }
+}
+
+msg_enum! {
+    SignatureScheme, u16;
+    {
+        // RSASSA-PKCS1-v1_5 algorithms.
+        RSA_PKCS1_SHA256 => 0x0401,
+        RSA_PKCS1_SHA384 => 0x0501,
+        RSA_PKCS1_SHA512 => 0x0601,
+
+        // ECDSA algorithms.
+        ECDSA_NISTP256_SHA256 => 0x0403,
+        ECDSA_NISTP384_SHA384 => 0x0503,
+        ECDSA_NISTP521_SHA512 => 0x0603,
+
+        // RSASSA-PSS algorithms with public key OID rsaEncryption.
+        RSA_PSS_SHA256 => 0x0804,
+        RSA_PSS_SHA384 => 0x0805,
+        RSA_PSS_SHA512 => 0x0806,
+
+        // EdDSA algorithms.
+        ED25519 => 0x0807,
+        ED448 => 0x0808,
+
+        // Legacy algorithms.
+        RSA_PKCS1_SHA1 => 0x0201,
+        ECDSA_SHA1_Legacy => 0x0203,
     }
 }

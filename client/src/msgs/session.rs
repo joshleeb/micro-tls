@@ -6,6 +6,25 @@ pub struct SessionId {
     len: usize,
 }
 
+impl SessionId {
+    pub fn empty() -> Self {
+        Self::default()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+}
+
+impl From<&[u8]> for SessionId {
+    fn from(bytes: &[u8]) -> Self {
+        let len = bytes.len();
+        let mut data = [0; 32];
+        data[..len].clone_from_slice(&bytes[..len]);
+        Self { data, len }
+    }
+}
+
 impl<'a> Codec<'a> for SessionId {
     fn encode(&self, enc: &mut Encoder<'a>) {
         enc.push(&(self.len as u8));
@@ -19,16 +38,7 @@ impl<'a> Codec<'a> for SessionId {
         }
 
         let bytes = dec.take(len)?;
-        let mut data = [0; 32];
-        data[..len].clone_from_slice(&bytes[..len]);
-
-        Some(SessionId { data, len })
-    }
-}
-
-impl SessionId {
-    pub fn empty() -> Self {
-        Self::default()
+        Some(bytes.into())
     }
 }
 
