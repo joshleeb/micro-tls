@@ -1,9 +1,8 @@
 use crate::msgs::{
     enums::ExtensionType,
     extension::{ProtocolVersions, SignatureSchemes},
-    Codec, CodecLength, Decoder, Encoder,
+    Codec, CodecSized, Decoder, Encoder,
 };
-use core::u16;
 
 #[derive(Debug)]
 pub enum ClientExtension<'a> {
@@ -18,19 +17,30 @@ impl<'a> ClientExtension<'a> {
             ClientExtension::SupportedVersions(_) => ExtensionType::SupportedVersions,
         }
     }
+
+    // TODO: Document this.
+    pub fn ext_size(&self) -> usize {
+        match self {
+            ClientExtension::SignatureAlgorithms(ref r) => {
+                SignatureSchemes::HEADER_SIZE + r.data_size()
+            }
+            ClientExtension::SupportedVersions(ref r) => {
+                ProtocolVersions::HEADER_SIZE + r.data_size()
+            }
+        }
+    }
 }
 
 impl<'a> Codec<'a> for ClientExtension<'a> {
     fn encode(&self, enc: &mut Encoder<'a>) {
         self.ty().encode(enc);
 
+        // TODO: Document this, and use a nicer method (perhaps part of CodecSized).
+        (self.ext_size() as u16).encode(enc);
+
         match self {
-            ClientExtension::SignatureAlgorithms(ref r) => {
-                r.encode(enc);
-            }
-            ClientExtension::SupportedVersions(ref r) => {
-                r.encode(enc);
-            }
+            ClientExtension::SignatureAlgorithms(ref r) => r.encode(enc),
+            ClientExtension::SupportedVersions(ref r) => r.encode(enc),
         };
     }
 
@@ -51,15 +61,44 @@ impl<'a> Codec<'a> for ClientExtension<'a> {
     }
 }
 
-impl<'a> CodecLength<'a> for ClientExtension<'a> {
-    const LENGTH: usize = 2;
+impl<'a> CodecSized<'a> for ClientExtension<'a> {
+    const HEADER_SIZE: usize = 2;
 
-    fn encode_len(len: usize, enc: &mut Encoder<'a>) {
-        debug_assert!(len <= usize::from(u16::MAX));
-        (len as u16).encode(enc);
+    fn data_size(&self) -> usize {
+        Self::HEADER_SIZE + self.ty().data_size() + self.ext_size()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::msgs::extension::{ProtocolVersions, SignatureSchemes};
+
+    mod encode {
+        use super::*;
+
+        #[test]
+        fn empty_signature_algorithms() {
+            let ext = ClientExtension::SignatureAlgorithms(SignatureSchemes::empty());
+            let mut enc = Encoder::new(vec![]);
+            ext.encode(&mut enc);
+
+            assert_eq!(ext.data_size(), 6);
+            assert_eq!(enc.bytes(), [0x00, 0x0d, 0, 2, 0, 0]);
+        }
+
+        #[test]
+        fn empty_supported_versions() {
+            let ext = ClientExtension::SupportedVersions(ProtocolVersions::empty());
+            let mut enc = Encoder::new(vec![]);
+            ext.encode(&mut enc);
+
+            assert_eq!(ext.data_size(), 5);
+            assert_eq!(enc.bytes(), [0x00, 0x2b, 0, 1, 0]);
+        }
     }
 
-    fn decode_len(dec: &mut Decoder<'a>) -> Option<usize> {
-        u16::decode(dec).map(usize::from)
+    mod decode {
+        use super::*;
     }
 }

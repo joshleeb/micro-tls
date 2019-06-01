@@ -1,18 +1,18 @@
 use crate::msgs::{
     array::Array,
     enums::{ProtocolVersion, SignatureScheme},
-    Codec, CodecLength, Decoder, Encoder,
+    Codec, CodecSized, Decoder, Encoder,
 };
 use client::ClientExtension;
 
 pub mod client;
 
 #[derive(Debug)]
-pub struct Extensions<'a, T: Codec<'a> + CodecLength<'a>> {
+pub struct Extensions<'a, T: Codec<'a> + CodecSized<'a>> {
     inner: Array<'a, T>,
 }
 
-impl<'a, T: Codec<'a> + CodecLength<'a>> Extensions<'a, T> {
+impl<'a, T: Codec<'a> + CodecSized<'a>> Extensions<'a, T> {
     pub fn empty() -> Self {
         Self {
             inner: Array::empty(),
@@ -24,10 +24,7 @@ impl<'a, T: Codec<'a> + CodecLength<'a>> Extensions<'a, T> {
     }
 }
 
-impl<'a, T> Codec<'a> for Extensions<'a, T>
-where
-    T: Codec<'a> + CodecLength<'a>,
-{
+impl<'a, T: Codec<'a> + CodecSized<'a>> Codec<'a> for Extensions<'a, T> {
     fn encode(&self, enc: &mut Encoder<'a>) {
         if self.inner.is_empty() {
             return;
@@ -76,23 +73,14 @@ macro_rules! ext_array {
 
         impl<'a> crate::msgs::Codec<'a> for $ident<'a> {
             fn encode(&self, enc: &mut crate::msgs::Encoder<'a>) {
-                self.inner.encode(enc);
+                self.encode_len(enc);
+                for item in self.inner.iter() {
+                    item.encode(enc);
+                }
             }
 
             fn decode(dec: &mut crate::msgs::Decoder<'a>) -> Option<Self> {
                 crate::msgs::array::Array::decode(dec).map(|inner| Self { inner })
-            }
-        }
-
-        impl<'a> crate::msgs::CodecLength<'a> for $ident<'a> {
-            const LENGTH: usize = <$ty>::LENGTH;
-
-            fn encode_len(len: usize, enc: &mut crate::msgs::Encoder<'a>) {
-                <$ty>::encode_len(len, enc);
-            }
-
-            fn decode_len(dec: &mut crate::msgs::Decoder<'a>) -> Option<usize> {
-                <$ty>::decode_len(dec)
             }
         }
 
@@ -109,5 +97,109 @@ macro_rules! ext_array {
     };
 }
 
-ext_array!(ProtocolVersions, ProtocolVersion);
 ext_array!(SignatureSchemes, SignatureScheme);
+
+impl<'a> CodecSized<'a> for SignatureSchemes<'a> {
+    const HEADER_SIZE: usize = 2;
+
+    fn data_size(&self) -> usize {
+        self.inner.data_size()
+    }
+}
+
+ext_array!(ProtocolVersions, ProtocolVersion);
+
+impl<'a> CodecSized<'a> for ProtocolVersions<'a> {
+    const HEADER_SIZE: usize = 1;
+
+    fn data_size(&self) -> usize {
+        self.inner.data_size()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod encode {
+        use super::*;
+
+        #[test]
+        fn empty_signautre_schemes() {
+            let arr = SignatureSchemes::empty();
+            let mut enc = Encoder::new(vec![]);
+            arr.encode(&mut enc);
+
+            assert_eq!(arr.data_size(), 0);
+            assert_eq!(enc.bytes(), [0, 0]);
+        }
+
+        #[test]
+        fn single_signature_scheme() {
+            let arr = SignatureSchemes {
+                inner: Array::from([SignatureScheme::RSA_PKCS1_SHA256].as_ref()),
+            };
+            let mut enc = Encoder::new(vec![]);
+            arr.encode(&mut enc);
+
+            assert_eq!(arr.data_size(), 2);
+            assert_eq!(enc.bytes(), [0, 2, 0x04, 0x01]);
+        }
+
+        #[test]
+        fn multiple_signature_schemes() {
+            let arr = SignatureSchemes {
+                inner: Array::from(
+                    [
+                        SignatureScheme::RSA_PKCS1_SHA256,
+                        SignatureScheme::RSA_PKCS1_SHA384,
+                    ]
+                    .as_ref(),
+                ),
+            };
+            let mut enc = Encoder::new(vec![]);
+            arr.encode(&mut enc);
+
+            assert_eq!(arr.data_size(), 4);
+            assert_eq!(enc.bytes(), [0, 4, 0x04, 0x01, 0x05, 0x01]);
+        }
+
+        #[test]
+        fn empty_protocol_versions() {
+            let arr = ProtocolVersions::empty();
+            let mut enc = Encoder::new(vec![]);
+            arr.encode(&mut enc);
+
+            assert_eq!(arr.data_size(), 0);
+            assert_eq!(enc.bytes(), [0]);
+        }
+
+        #[test]
+        fn single_protocol_version() {
+            let arr = ProtocolVersions {
+                inner: Array::from([ProtocolVersion::TLSv1_3].as_ref()),
+            };
+            let mut enc = Encoder::new(vec![]);
+            arr.encode(&mut enc);
+
+            assert_eq!(arr.data_size(), 2);
+            assert_eq!(enc.bytes(), [2, 0x03, 0x04]);
+        }
+
+        #[test]
+        fn multiple_protocol_versions() {
+            let arr = ProtocolVersions {
+                inner: Array::from([ProtocolVersion::TLSv1_3, ProtocolVersion::TLSv1_2].as_ref()),
+            };
+            let mut enc = Encoder::new(vec![]);
+            arr.encode(&mut enc);
+
+            assert_eq!(arr.data_size(), 4);
+            assert_eq!(enc.bytes(), [4, 0x03, 0x04, 0x03, 0x03]);
+        }
+    }
+
+    mod decode {
+        use super::*;
+    }
+}

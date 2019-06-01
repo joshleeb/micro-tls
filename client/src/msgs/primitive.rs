@@ -1,5 +1,5 @@
-use crate::msgs::{Codec, CodecLength, Decoder, Encoder};
-use core::{u16, u8};
+use crate::msgs::{Codec, CodecSized, Decoder, Encoder};
+use core::{mem, u16, u8};
 
 impl<'a> Codec<'a> for u8 {
     fn encode(&self, enc: &mut Encoder<'a>) {
@@ -7,21 +7,15 @@ impl<'a> Codec<'a> for u8 {
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
-        dec.take(u8::LENGTH).map(|b| b[0])
+        dec.take(u8::data_size(&0)).map(|b| b[0])
     }
 }
 
-impl<'a> CodecLength<'a> for u8 {
-    // TODO: CodeLength::LENGTH for u8 should look into using mem::size_of
-    const LENGTH: usize = 1;
+impl<'a> CodecSized<'a> for u8 {
+    const HEADER_SIZE: usize = mem::size_of::<Self>();
 
-    fn encode_len(len: usize, enc: &mut Encoder<'a>) {
-        debug_assert!(len <= usize::from(u8::MAX));
-        (len as u8).encode(enc);
-    }
-
-    fn decode_len(dec: &mut Decoder<'a>) -> Option<usize> {
-        u8::decode(dec).map(usize::from)
+    fn data_size(&self) -> usize {
+        mem::size_of::<Self>()
     }
 }
 
@@ -38,21 +32,15 @@ impl<'a> Codec<'a> for u16 {
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
-        dec.take(u16::LENGTH)
+        dec.take(u16::data_size(&0))
             .map(|b| (u16::from(b[0]) << 8) | u16::from(b[1]))
     }
 }
 
-impl<'a> CodecLength<'a> for u16 {
-    // TODO: CodeLength::LENGTH for u16 should look into using mem::size_of
-    const LENGTH: usize = 2;
+impl<'a> CodecSized<'a> for u16 {
+    const HEADER_SIZE: usize = mem::size_of::<Self>();
 
-    fn encode_len(len: usize, enc: &mut Encoder<'a>) {
-        debug_assert!(len <= usize::from(u16::MAX));
-        (len as u16).encode(enc);
-    }
-
-    fn decode_len(dec: &mut Decoder<'a>) -> Option<usize> {
-        u16::decode(dec).map(usize::from)
+    fn data_size(&self) -> usize {
+        mem::size_of::<Self>()
     }
 }

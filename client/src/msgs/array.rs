@@ -1,4 +1,5 @@
-use crate::msgs::{Codec, CodecLength, Decoder, Encoder};
+use crate::msgs::{Codec, CodecSized, Decoder, Encoder};
+use core::mem;
 use item::Items;
 use iter::ArrayIter;
 
@@ -7,15 +8,12 @@ pub mod iter;
 mod item;
 
 #[derive(Debug, Clone)]
-pub struct Array<'a, T: Codec<'a> + CodecLength<'a>> {
+pub struct Array<'a, T: Codec<'a> + CodecSized<'a>> {
     len: usize,
     items: Items<'a, T>,
 }
 
-impl<'a, T> Array<'a, T>
-where
-    T: Codec<'a> + CodecLength<'a>,
-{
+impl<'a, T: Codec<'a> + CodecSized<'a>> Array<'a, T> {
     pub fn empty() -> Self {
         Self {
             len: 0,
@@ -34,15 +32,15 @@ where
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
+
+    pub fn encode_items(&self, enc: &mut Encoder<'a>) {
+        self.items.encode(enc);
+    }
 }
 
-impl<'a, T> Codec<'a> for Array<'a, T>
-where
-    T: Codec<'a> + CodecLength<'a>,
-{
+impl<'a, T: Codec<'a> + CodecSized<'a>> Codec<'a> for Array<'a, T> {
     fn encode(&self, enc: &mut Encoder<'a>) {
-        let n_bytes = self.len() * T::LENGTH;
-        T::encode_len(n_bytes, enc);
+        self.encode_len(enc);
         self.items.encode(enc);
     }
 
@@ -51,15 +49,20 @@ where
             return Some(Array::empty());
         }
 
-        let len = T::decode_len(dec)?;
+        let len = Self::decode_len(dec)?;
         Items::decode(len, dec).map(|items| Self { len, items })
     }
 }
 
-impl<'a, T> From<&'a [T]> for Array<'a, T>
-where
-    T: Codec<'a> + CodecLength<'a>,
-{
+impl<'a, T: Codec<'a> + CodecSized<'a>> CodecSized<'a> for Array<'a, T> {
+    const HEADER_SIZE: usize = T::HEADER_SIZE;
+
+    fn data_size(&self) -> usize {
+        self.items.data_size()
+    }
+}
+
+impl<'a, T: Codec<'a> + CodecSized<'a>> From<&'a [T]> for Array<'a, T> {
     fn from(items: &'a [T]) -> Self {
         Self {
             len: items.len(),

@@ -42,15 +42,11 @@ macro_rules! msg_enum {
             }
         }
 
-        impl<'a> crate::msgs::CodecLength<'a> for $ident {
-            const LENGTH: usize = <$ty>::LENGTH;
+        impl<'a> crate::msgs::CodecSized<'a> for $ident {
+            const HEADER_SIZE: usize = <$ty>::HEADER_SIZE;
 
-            fn encode_len(len: usize, enc: &mut crate::msgs::Encoder<'a>) {
-                <$ty>::encode_len(len, enc);
-            }
-
-            fn decode_len(dec: &mut crate::msgs::Decoder<'a>) -> Option<usize> {
-                <$ty>::decode_len(dec)
+            fn data_size(&self) -> usize {
+                <$ty>::data_size(&0)
             }
         }
     };
