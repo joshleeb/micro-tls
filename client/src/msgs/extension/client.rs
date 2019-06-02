@@ -1,5 +1,6 @@
 use crate::msgs::{
-    enums::ExtensionType,
+    array::Array,
+    enums::{ExtensionType, ProtocolVersion, SignatureScheme},
     extension::{ProtocolVersions, SignatureSchemes},
     Codec, CodecSized, Decoder, Encoder,
 };
@@ -66,6 +67,18 @@ impl<'a> CodecSized<'a> for ClientExtension<'a> {
 
     fn data_size(&self) -> usize {
         Self::HEADER_SIZE + self.ty().data_size() + self.ext_size()
+    }
+}
+
+impl<'a> From<Array<'a, SignatureScheme>> for ClientExtension<'a> {
+    fn from(data: Array<'a, SignatureScheme>) -> Self {
+        ClientExtension::SignatureAlgorithms(SignatureSchemes::from(data))
+    }
+}
+
+impl<'a> From<Array<'a, ProtocolVersion>> for ClientExtension<'a> {
+    fn from(data: Array<'a, ProtocolVersion>) -> Self {
+        ClientExtension::SupportedVersions(ProtocolVersions::from(data))
     }
 }
 

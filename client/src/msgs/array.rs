@@ -1,7 +1,9 @@
 use crate::msgs::{Codec, CodecSized, Decoder, Encoder};
-use core::mem;
 use item::Items;
 use iter::ArrayIter;
+
+#[macro_use]
+pub mod macros;
 
 pub mod iter;
 
@@ -9,15 +11,15 @@ mod item;
 
 #[derive(Debug, Clone)]
 pub struct Array<'a, T: Codec<'a> + CodecSized<'a>> {
-    len: usize,
     items: Items<'a, T>,
+    len: usize,
 }
 
 impl<'a, T: Codec<'a> + CodecSized<'a>> Array<'a, T> {
     pub fn empty() -> Self {
         Self {
-            len: 0,
             items: Items::empty(),
+            len: 0,
         }
     }
 
@@ -31,10 +33,6 @@ impl<'a, T: Codec<'a> + CodecSized<'a>> Array<'a, T> {
 
     pub fn is_empty(&self) -> bool {
         self.len() == 0
-    }
-
-    pub fn encode_items(&self, enc: &mut Encoder<'a>) {
-        self.items.encode(enc);
     }
 }
 
@@ -62,34 +60,48 @@ impl<'a, T: Codec<'a> + CodecSized<'a>> CodecSized<'a> for Array<'a, T> {
     }
 }
 
+impl<'a, T: Codec<'a> + CodecSized<'a>> Default for Array<'a, T> {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
 impl<'a, T: Codec<'a> + CodecSized<'a>> From<&'a [T]> for Array<'a, T> {
     fn from(items: &'a [T]) -> Self {
         Self {
+            items: items.into(),
             len: items.len(),
-            items: Items::from(items),
         }
     }
 }
 
-// TODO: Improve msgs::array tests.
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::vec::Vec;
 
     #[test]
     fn empty_len() {
-        let items: Array<'_, u8> = Array::from([].as_ref());
+        let items: Array<'_, u8> = arr![];
 
         assert_eq!(items.len(), 0);
         assert!(items.is_empty());
     }
 
     #[test]
-    fn non_empty_len() {
-        let items: Array<'_, u8> = Array::from([99].as_ref());
+    fn single_item() {
+        let items: Array<'_, u8> = arr![99];
 
         assert_eq!(items.len(), 1);
-        assert!(!items.is_empty());
+        assert_eq!(items.iter().collect::<Vec<u8>>(), vec![99]);
+    }
+
+    #[test]
+    fn multi_items() {
+        let items: Array<'_, u8> = arr![98, 99];
+
+        assert_eq!(items.len(), 2);
+        assert_eq!(items.iter().collect::<Vec<u8>>(), vec![98, 99]);
     }
 
     mod encode {
@@ -97,38 +109,42 @@ mod tests {
 
         #[test]
         fn empty_single_byte_size() {
-            let items: Array<'_, u8> = Array::from([].as_ref());
+            let items: Array<'_, u8> = Array::empty();
             let mut enc = Encoder::new(vec![]);
             items.encode(&mut enc);
 
             assert_eq!(enc.bytes(), [0]);
+            assert_eq!(items.data_size(), 0);
         }
 
         #[test]
         fn empty_multi_bytes_size() {
-            let items: Array<'_, u16> = Array::from([].as_ref());
+            let items: Array<'_, u16> = Array::empty();
             let mut enc = Encoder::new(vec![]);
             items.encode(&mut enc);
 
             assert_eq!(enc.bytes(), [0, 0]);
+            assert_eq!(items.data_size(), 0);
         }
 
         #[test]
         fn single_byte_items() {
-            let items: Array<'_, u8> = Array::from([0, 1, 2, 3].as_ref());
+            let items: Array<'_, u8> = arr![96, 97, 98, 99];
             let mut enc = Encoder::new(vec![]);
             items.encode(&mut enc);
 
-            assert_eq!(enc.bytes(), [4, 0, 1, 2, 3]);
+            assert_eq!(enc.bytes(), [4, 96, 97, 98, 99]);
+            assert_eq!(items.data_size(), 4);
         }
 
         #[test]
         fn multiple_byte_items() {
-            let items: Array<'_, u16> = Array::from([0, 1, 2, 3].as_ref());
+            let items: Array<'_, u16> = arr![96, 97, 98, 99];
             let mut enc = Encoder::new(vec![]);
             items.encode(&mut enc);
 
-            assert_eq!(enc.bytes(), [0, 8, 0, 0, 0, 1, 0, 2, 0, 3]);
+            assert_eq!(enc.bytes(), [0, 8, 0, 96, 0, 97, 0, 98, 0, 99]);
+            assert_eq!(items.data_size(), 8);
         }
     }
 
@@ -143,6 +159,7 @@ mod tests {
             let items: Array<'_, u8> = Array::decode(&mut dec).unwrap();
 
             assert!(items.is_empty());
+            assert_eq!(items.data_size(), 0);
         }
 
         #[test]
@@ -152,6 +169,7 @@ mod tests {
             let items: Array<'_, u16> = Array::decode(&mut dec).unwrap();
 
             assert!(items.is_empty());
+            assert_eq!(items.data_size(), 0);
         }
 
         #[test]
@@ -170,24 +188,27 @@ mod tests {
             let items: Array<'_, u8> = Array::decode(&mut dec).unwrap();
 
             assert!(items.is_empty());
+            assert_eq!(items.data_size(), 0);
         }
 
         #[test]
         fn single_byte_items() {
-            let bytes = [4, 0, 1, 2, 3];
+            let bytes = [4, 96, 97, 98, 99];
             let mut dec = Decoder::new(&bytes);
             let items: Array<'_, u8> = Array::decode(&mut dec).unwrap();
 
-            assert_eq!(items.iter().collect::<Vec<u8>>(), vec![0, 1, 2, 3]);
+            assert_eq!(items.iter().collect::<Vec<u8>>(), vec![96, 97, 98, 99]);
+            assert_eq!(items.data_size(), 4);
         }
 
         #[test]
         fn multiple_byte_items() {
-            let bytes = [0, 8, 0, 0, 0, 1, 0, 2, 0, 3];
+            let bytes = [0, 8, 0, 96, 0, 97, 0, 98, 0, 99];
             let mut dec = Decoder::new(&bytes);
             let items: Array<'_, u16> = Array::decode(&mut dec).unwrap();
 
-            assert_eq!(items.iter().collect::<Vec<u16>>(), vec![0, 1, 2, 3]);
+            assert_eq!(items.iter().collect::<Vec<u16>>(), vec![96, 97, 98, 99]);
+            assert_eq!(items.data_size(), 8);
         }
     }
 }

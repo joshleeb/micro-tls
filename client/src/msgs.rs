@@ -3,7 +3,9 @@ use managed::ManagedSlice;
 
 pub mod enums;
 
+#[macro_use]
 mod array;
+
 mod extension;
 mod handshake;
 mod primitive;

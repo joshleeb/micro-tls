@@ -1,56 +1,5 @@
-macro_rules! msg_enum {
-    (
-        $ident: ident, $ty: ty;
-        { $($var: ident => $val: expr),*$(,)? }
-    ) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-        pub enum $ident {
-            $($var),*,
-            Unknown($ty),
-        }
-
-        impl From<$ident> for $ty {
-            fn from(val: $ident) -> Self {
-                match val {
-                    $($ident::$var => $val),*,
-                    $ident::Unknown(x) => x,
-                }
-            }
-        }
-
-        impl From<$ty> for $ident {
-            fn from(val: $ty) -> Self {
-                match val {
-                    $($val => $ident::$var),*,
-                    x => $ident::Unknown(x),
-                }
-            }
-        }
-
-        impl<'a> crate::msgs::Codec<'a> for $ident {
-            fn encode(&self, enc: &mut crate::msgs::Encoder<'a>) {
-                <$ty>::from(*self).encode(enc);
-            }
-
-            fn decode(dec: &mut crate::msgs::Decoder<'a>) -> Option<Self> {
-                <$ty>::decode(dec).map(|item| {
-                    match item {
-                        $($val => $ident::$var),*,
-                        x => $ident::Unknown(x),
-                    }
-                })
-            }
-        }
-
-        impl<'a> crate::msgs::CodecSized<'a> for $ident {
-            const HEADER_SIZE: usize = <$ty>::HEADER_SIZE;
-
-            fn data_size(&self) -> usize {
-                <$ty>::data_size(&0)
-            }
-        }
-    };
-}
+#[macro_use]
+mod macros;
 
 msg_enum! {
     ProtocolVersion, u16;
@@ -60,12 +9,24 @@ msg_enum! {
     }
 }
 
+impl Default for ProtocolVersion {
+    fn default() -> Self {
+        ProtocolVersion::TLSv1_2
+    }
+}
+
 msg_enum! {
     CompressionMethod, u8;
     {
         Null => 0x00,
         Deflate => 0x01,
         LSZ => 0x40
+    }
+}
+
+impl Default for CompressionMethod {
+    fn default() -> Self {
+        CompressionMethod::Null
     }
 }
 
@@ -90,26 +51,26 @@ msg_enum! {
     SignatureScheme, u16;
     {
         // RSASSA-PKCS1-v1_5 algorithms.
-        RSA_PKCS1_SHA256 => 0x0401,
-        RSA_PKCS1_SHA384 => 0x0501,
-        RSA_PKCS1_SHA512 => 0x0601,
+        RsaPkcs1Sha256 => 0x0401,
+        RsaPkcs1Sha384 => 0x0501,
+        RsaPkcs1Sha512 => 0x0601,
 
         // ECDSA algorithms.
-        ECDSA_NISTP256_SHA256 => 0x0403,
-        ECDSA_NISTP384_SHA384 => 0x0503,
-        ECDSA_NISTP521_SHA512 => 0x0603,
+        EcdsaNistp256Sha256 => 0x0403,
+        EcdsaNistp384Sha384 => 0x0503,
+        EcdsaNistp521Sha512 => 0x0603,
 
         // RSASSA-PSS algorithms with public key OID rsaEncryption.
-        RSA_PSS_SHA256 => 0x0804,
-        RSA_PSS_SHA384 => 0x0805,
-        RSA_PSS_SHA512 => 0x0806,
+        RsaPssSha256 => 0x0804,
+        RsaPssSha384 => 0x0805,
+        RsaPssSha512 => 0x0806,
 
         // EdDSA algorithms.
-        ED25519 => 0x0807,
-        ED448 => 0x0808,
+        Ed25519 => 0x0807,
+        Ed448 => 0x0808,
 
         // Legacy algorithms.
-        RSA_PKCS1_SHA1 => 0x0201,
-        ECDSA_SHA1_Legacy => 0x0203,
+        RsaPkcs1Sha1 => 0x0201,
+        EcdsaSha1Legacy => 0x0203,
     }
 }

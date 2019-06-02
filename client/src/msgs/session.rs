@@ -16,11 +16,11 @@ impl SessionId {
     }
 }
 
-impl From<&[u8]> for SessionId {
-    fn from(bytes: &[u8]) -> Self {
-        let len = bytes.len();
+impl<T: AsRef<[u8]>> From<T> for SessionId {
+    fn from(bytes: T) -> Self {
+        let len = bytes.as_ref().len();
         let mut data = [0; 32];
-        data[..len].clone_from_slice(&bytes[..len]);
+        data[..len].copy_from_slice(&bytes.as_ref()[..len]);
         Self { data, len }
     }
 }

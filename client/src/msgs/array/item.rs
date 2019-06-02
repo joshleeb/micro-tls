@@ -1,6 +1,6 @@
 use crate::msgs::{array::iter::ArrayIter, Codec, CodecSized, Decoder, Encoder};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Items<'a, T: Codec<'a> + CodecSized<'a>> {
     Typed(&'a [T]),
     Bytes(&'a [u8]),
@@ -34,7 +34,6 @@ impl<'a, T: Codec<'a> + CodecSized<'a>> Items<'a, T> {
 impl<'a, T: Codec<'a> + CodecSized<'a>> CodecSized<'a> for Items<'a, T> {
     const HEADER_SIZE: usize = T::HEADER_SIZE;
 
-    // TODO: CodeLength::LENGTH for u16 should look into using mem::size_of
     fn data_size(&self) -> usize {
         match self {
             Items::Typed(t) => t.iter().map(CodecSized::data_size).sum::<usize>(),
@@ -46,5 +45,107 @@ impl<'a, T: Codec<'a> + CodecSized<'a>> CodecSized<'a> for Items<'a, T> {
 impl<'a, T: Codec<'a> + CodecSized<'a>> From<&'a [T]> for Items<'a, T> {
     fn from(inner: &'a [T]) -> Self {
         Items::Typed(inner)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::vec::Vec;
+
+    #[test]
+    fn empty() {
+        let items: Items<'_, u8> = Items::empty();
+
+        assert_eq!(items, Items::Typed(&[]));
+    }
+
+    #[test]
+    fn typed_iter() {
+        let items: Items<'_, u8> = Items::Typed(&[7, 8, 9]);
+
+        assert_eq!(items.iter().collect::<Vec<u8>>(), vec![7, 8, 9]);
+    }
+
+    #[test]
+    fn single_bytes_iter() {
+        let items: Items<'_, u8> = Items::Bytes(&[7, 8, 9]);
+
+        assert_eq!(items.iter().collect::<Vec<u8>>(), vec![7, 8, 9]);
+    }
+
+    #[test]
+    fn multi_bytes_iter() {
+        let items: Items<'_, u16> = Items::Bytes(&[0, 7, 0, 8, 0, 9]);
+
+        assert_eq!(items.iter().collect::<Vec<u16>>(), vec![7, 8, 9]);
+    }
+
+    mod encode {
+        use super::*;
+
+        #[test]
+        fn empty() {
+            let items: Items<'_, u8> = Items::empty();
+            let mut enc = Encoder::new(vec![]);
+            items.encode(&mut enc);
+
+            assert!(enc.bytes().is_empty());
+            assert_eq!(items.data_size(), 0);
+        }
+
+        #[test]
+        fn single_byte_items() {
+            let items: Items<'_, u8> = Items::from([7, 8, 9].as_ref());
+            let mut enc = Encoder::new(vec![]);
+            items.encode(&mut enc);
+
+            assert_eq!(enc.bytes(), [7, 8, 9]);
+            assert_eq!(items.data_size(), 3);
+        }
+
+        #[test]
+        fn multi_byte_items() {
+            let items: Items<'_, u16> = Items::from([7, 8, 9].as_ref());
+            let mut enc = Encoder::new(vec![]);
+            items.encode(&mut enc);
+
+            assert_eq!(enc.bytes(), [0, 7, 0, 8, 0, 9]);
+            assert_eq!(items.data_size(), 6);
+        }
+    }
+
+    mod decode {
+        use super::*;
+
+        #[test]
+        fn empty() {
+            let bytes = [];
+            let mut dec = Decoder::new(&bytes);
+            let items: Items<'_, u8> = Items::decode(0, &mut dec).unwrap();
+
+            assert_eq!(items, Items::Bytes(&bytes));
+            assert_eq!(items.data_size(), 0);
+        }
+
+        #[test]
+        fn single_byte_items() {
+            let bytes = [7, 8, 9];
+            let mut dec = Decoder::new(&bytes);
+            let items: Items<'_, u8> = Items::decode(3, &mut dec).unwrap();
+
+            assert_eq!(items, Items::Bytes(&bytes));
+            assert_eq!(items.data_size(), 3);
+        }
+
+        #[test]
+        fn multi_byte_items() {
+            let bytes = [0, 7, 0, 8, 0, 9];
+            let mut dec = Decoder::new(&bytes);
+            let items: Items<'_, u16> = Items::decode(6, &mut dec).unwrap();
+
+            assert_eq!(items, Items::Bytes(&bytes));
+            assert_eq!(items.data_size(), 6);
+        }
     }
 }

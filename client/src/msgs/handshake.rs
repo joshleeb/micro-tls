@@ -4,10 +4,10 @@ use crate::msgs::{
     extension::{client::ClientExtension, Extensions},
     random::Random,
     session::SessionId,
-    Codec, CodecSized, Decoder, Encoder,
+    Codec, Decoder, Encoder,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ClientHelloPayload<'a> {
     pub client_version: ProtocolVersion,
     pub random: Random,
@@ -36,19 +36,6 @@ impl<'a> Codec<'a> for ClientHelloPayload<'a> {
             compression_methods: Array::decode(dec)?,
             extensions: Extensions::decode(dec)?,
         })
-    }
-}
-
-impl<'a> Default for ClientHelloPayload<'a> {
-    fn default() -> Self {
-        Self {
-            client_version: ProtocolVersion::TLSv1_2,
-            random: Random::empty(),
-            session_id: SessionId::empty(),
-            cipher_suites: Array::empty(),
-            compression_methods: Array::empty(),
-            extensions: Extensions::empty(),
-        }
     }
 }
 
@@ -95,7 +82,7 @@ mod tests {
         fn client_hello_random() {
             assert_eq!(
                 embed_bytes(ClientHelloPayload {
-                    random: Random::from([9; 32]),
+                    random: [9; 32].into(),
                     ..Default::default()
                 }),
                 rustls_bytes(r_ClientHelloPayload {
@@ -113,7 +100,7 @@ mod tests {
         fn client_hello_session_id() {
             assert_eq!(
                 embed_bytes(ClientHelloPayload {
-                    session_id: SessionId::from([97, 98, 99].as_ref()),
+                    session_id: [97, 98, 99].into(),
                     ..Default::default()
                 }),
                 rustls_bytes(r_ClientHelloPayload {
@@ -131,7 +118,7 @@ mod tests {
         fn client_hello_single_cipher_suite() {
             assert_eq!(
                 embed_bytes(ClientHelloPayload {
-                    cipher_suites: Array::from([CipherSuite::TlsAes128GcmSha256].as_ref()),
+                    cipher_suites: arr![CipherSuite::TlsAes128GcmSha256],
                     ..Default::default()
                 }),
                 rustls_bytes(r_ClientHelloPayload {
@@ -149,13 +136,10 @@ mod tests {
         fn client_hello_multiple_cipher_suites() {
             assert_eq!(
                 embed_bytes(ClientHelloPayload {
-                    cipher_suites: Array::from(
-                        [
-                            CipherSuite::TlsAes128GcmSha256,
-                            CipherSuite::TlsChaCha20Poly1305Sha256
-                        ]
-                        .as_ref()
-                    ),
+                    cipher_suites: arr![
+                        CipherSuite::TlsAes128GcmSha256,
+                        CipherSuite::TlsChaCha20Poly1305Sha256,
+                    ],
                     ..Default::default()
                 }),
                 rustls_bytes(r_ClientHelloPayload {
@@ -164,7 +148,7 @@ mod tests {
                     session_id: r_SessionId::empty(),
                     cipher_suites: vec![
                         r_CipherSuite::TLS13_AES_128_GCM_SHA256,
-                        r_CipherSuite::TLS13_CHACHA20_POLY1305_SHA256
+                        r_CipherSuite::TLS13_CHACHA20_POLY1305_SHA256,
                     ],
                     compression_methods: vec![],
                     extensions: vec![],
@@ -176,7 +160,7 @@ mod tests {
         fn client_hello_single_compression_method() {
             assert_eq!(
                 embed_bytes(ClientHelloPayload {
-                    compression_methods: Array::from([CompressionMethod::Deflate].as_ref()),
+                    compression_methods: arr![CompressionMethod::Deflate],
                     ..Default::default()
                 }),
                 rustls_bytes(r_ClientHelloPayload {
@@ -194,9 +178,7 @@ mod tests {
         fn client_hello_multiple_compression_methods() {
             assert_eq!(
                 embed_bytes(ClientHelloPayload {
-                    compression_methods: Array::from(
-                        [CompressionMethod::Null, CompressionMethod::Deflate].as_ref()
-                    ),
+                    compression_methods: arr![CompressionMethod::Null, CompressionMethod::Deflate],
                     ..Default::default()
                 }),
                 rustls_bytes(r_ClientHelloPayload {
@@ -214,12 +196,9 @@ mod tests {
         fn client_hello_extension_empty_signature_algorithms() {
             assert_eq!(
                 embed_bytes(ClientHelloPayload {
-                    extensions: Extensions::from(
-                        [ClientExtension::SignatureAlgorithms(
-                            SignatureSchemes::empty()
-                        )]
-                        .as_ref()
-                    ),
+                    extensions: Extensions::from(arr![ClientExtension::SignatureAlgorithms(
+                        SignatureSchemes::empty(),
+                    )]),
                     ..Default::default()
                 }),
                 rustls_bytes(r_ClientHelloPayload {
@@ -237,12 +216,9 @@ mod tests {
         fn client_hello_extension_single_signature_algorithm() {
             assert_eq!(
                 embed_bytes(ClientHelloPayload {
-                    extensions: Extensions::from(
-                        [ClientExtension::SignatureAlgorithms(SignatureSchemes {
-                            inner: Array::from([SignatureScheme::RSA_PKCS1_SHA256].as_ref())
-                        })]
-                        .as_ref()
-                    ),
+                    extensions: Extensions::from(arr![ClientExtension::from(arr![
+                        SignatureScheme::RsaPkcs1Sha256,
+                    ])]),
                     ..Default::default()
                 }),
                 rustls_bytes(r_ClientHelloPayload {
@@ -252,7 +228,7 @@ mod tests {
                     cipher_suites: vec![],
                     compression_methods: vec![],
                     extensions: vec![r_ClientExtension::SignatureAlgorithms(vec![
-                        r_SignatureScheme::RSA_PKCS1_SHA256
+                        r_SignatureScheme::RSA_PKCS1_SHA256,
                     ])],
                 }),
             )
@@ -262,18 +238,10 @@ mod tests {
         fn client_hello_extension_multiple_signature_algorithms() {
             assert_eq!(
                 embed_bytes(ClientHelloPayload {
-                    extensions: Extensions::from(
-                        [ClientExtension::SignatureAlgorithms(SignatureSchemes {
-                            inner: Array::from(
-                                [
-                                    SignatureScheme::RSA_PKCS1_SHA256,
-                                    SignatureScheme::ECDSA_NISTP256_SHA256,
-                                ]
-                                .as_ref()
-                            )
-                        })]
-                        .as_ref()
-                    ),
+                    extensions: Extensions::from(arr![ClientExtension::from(arr![
+                        SignatureScheme::RsaPkcs1Sha256,
+                        SignatureScheme::EcdsaNistp256Sha256,
+                    ])]),
                     ..Default::default()
                 }),
                 rustls_bytes(r_ClientHelloPayload {
@@ -294,9 +262,9 @@ mod tests {
         fn client_hello_extension_empty_protocol_versions() {
             assert_eq!(
                 embed_bytes(ClientHelloPayload {
-                    extensions: Extensions::from(
-                        [ClientExtension::SupportedVersions(ProtocolVersions::empty())].as_ref()
-                    ),
+                    extensions: Extensions::from(arr![ClientExtension::SupportedVersions(
+                        ProtocolVersions::empty(),
+                    )]),
                     ..Default::default()
                 }),
                 rustls_bytes(r_ClientHelloPayload {
@@ -314,39 +282,9 @@ mod tests {
         fn client_hello_extension_single_protocol_version() {
             assert_eq!(
                 embed_bytes(ClientHelloPayload {
-                    extensions: Extensions::from(
-                        [ClientExtension::SupportedVersions(ProtocolVersions {
-                            inner: Array::from([ProtocolVersion::TLSv1_3].as_ref())
-                        })]
-                        .as_ref()
-                    ),
-                    ..Default::default()
-                }),
-                rustls_bytes(r_ClientHelloPayload {
-                    client_version: r_ProtocolVersion::TLSv1_2,
-                    random: r_Random::from_slice(&[0; 32]),
-                    session_id: r_SessionId::empty(),
-                    cipher_suites: vec![],
-                    compression_methods: vec![],
-                    extensions: vec![r_ClientExtension::SupportedVersions(vec![
-                        r_ProtocolVersion::TLSv1_3
-                    ])],
-                }),
-            )
-        }
-
-        #[test]
-        fn client_hello_extension_multiple_protocol_versions() {
-            assert_eq!(
-                embed_bytes(ClientHelloPayload {
-                    extensions: Extensions::from(
-                        [ClientExtension::SupportedVersions(ProtocolVersions {
-                            inner: Array::from(
-                                [ProtocolVersion::TLSv1_3, ProtocolVersion::TLSv1_2].as_ref()
-                            )
-                        })]
-                        .as_ref()
-                    ),
+                    extensions: Extensions::from(arr![ClientExtension::from(arr![
+                        ProtocolVersion::TLSv1_3,
+                    ])]),
                     ..Default::default()
                 }),
                 rustls_bytes(r_ClientHelloPayload {
@@ -357,13 +295,70 @@ mod tests {
                     compression_methods: vec![],
                     extensions: vec![r_ClientExtension::SupportedVersions(vec![
                         r_ProtocolVersion::TLSv1_3,
-                        r_ProtocolVersion::TLSv1_2
                     ])],
                 }),
             )
         }
 
-        // TODO: Add test for mixed extension types.
+        #[test]
+        fn client_hello_extension_multiple_protocol_versions() {
+            assert_eq!(
+                embed_bytes(ClientHelloPayload {
+                    extensions: Extensions::from(arr![ClientExtension::from(arr![
+                        ProtocolVersion::TLSv1_3,
+                        ProtocolVersion::TLSv1_2,
+                    ])]),
+                    ..Default::default()
+                }),
+                rustls_bytes(r_ClientHelloPayload {
+                    client_version: r_ProtocolVersion::TLSv1_2,
+                    random: r_Random::from_slice(&[0; 32]),
+                    session_id: r_SessionId::empty(),
+                    cipher_suites: vec![],
+                    compression_methods: vec![],
+                    extensions: vec![r_ClientExtension::SupportedVersions(vec![
+                        r_ProtocolVersion::TLSv1_3,
+                        r_ProtocolVersion::TLSv1_2,
+                    ])],
+                }),
+            )
+        }
+
+        #[test]
+        fn client_hello_extension_multiple_types() {
+            assert_eq!(
+                embed_bytes(ClientHelloPayload {
+                    extensions: Extensions::from(arr![
+                        ClientExtension::from(arr![
+                            ProtocolVersion::TLSv1_3,
+                            ProtocolVersion::TLSv1_2,
+                        ]),
+                        ClientExtension::from(arr![
+                            SignatureScheme::RsaPkcs1Sha256,
+                            SignatureScheme::EcdsaNistp256Sha256,
+                        ])
+                    ]),
+                    ..Default::default()
+                }),
+                rustls_bytes(r_ClientHelloPayload {
+                    client_version: r_ProtocolVersion::TLSv1_2,
+                    random: r_Random::from_slice(&[0; 32]),
+                    session_id: r_SessionId::empty(),
+                    cipher_suites: vec![],
+                    compression_methods: vec![],
+                    extensions: vec![
+                        r_ClientExtension::SupportedVersions(vec![
+                            r_ProtocolVersion::TLSv1_3,
+                            r_ProtocolVersion::TLSv1_2,
+                        ]),
+                        r_ClientExtension::SignatureAlgorithms(vec![
+                            r_SignatureScheme::RSA_PKCS1_SHA256,
+                            r_SignatureScheme::ECDSA_NISTP256_SHA256,
+                        ])
+                    ],
+                }),
+            )
+        }
     }
 
     mod decode {
