@@ -11,9 +11,9 @@ pub mod client;
 mod macros;
 
 #[derive(Debug, PartialEq)]
-pub struct Extensions<'a, T: Codec<'a> + CodecSized<'a>>(Array<'a, T>);
+pub struct Extensions<'a, T: CodecSized<'a>>(Array<'a, T>);
 
-impl<'a, T: Codec<'a> + CodecSized<'a>> Extensions<'a, T> {
+impl<'a, T: CodecSized<'a>> Extensions<'a, T> {
     pub fn empty() -> Self {
         Self(Array::empty())
     }
@@ -27,7 +27,7 @@ impl<'a, T: Codec<'a> + CodecSized<'a>> Extensions<'a, T> {
     }
 }
 
-impl<'a, T: Codec<'a> + CodecSized<'a>> Codec<'a> for Extensions<'a, T> {
+impl<'a, T: CodecSized<'a>> Codec<'a> for Extensions<'a, T> {
     fn encode(&self, enc: &mut Encoder<'a>) {
         if self.0.is_empty() {
             return;
@@ -40,7 +40,7 @@ impl<'a, T: Codec<'a> + CodecSized<'a>> Codec<'a> for Extensions<'a, T> {
     }
 }
 
-impl<'a, T: Codec<'a> + CodecSized<'a>> Default for Extensions<'a, T> {
+impl<'a, T: CodecSized<'a>> Default for Extensions<'a, T> {
     fn default() -> Self {
         Self::empty()
     }

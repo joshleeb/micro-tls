@@ -19,7 +19,7 @@ pub trait Codec<'a>: Sized {
 }
 
 // TODO: Tests for CodecSized
-pub trait CodecSized<'a> {
+pub trait CodecSized<'a>: Codec<'a> {
     // TODO: Replace usize with enum to remove the unimplemented catch all in the match statements.
     // How many bytes should data_size() be put into?
     const HEADER_SIZE: usize;
