@@ -10,7 +10,7 @@ pub mod client;
 #[macro_use]
 mod macros;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Extensions<'a, T: Codec<'a> + CodecSized<'a>>(Array<'a, T>);
 
 impl<'a, T: Codec<'a> + CodecSized<'a>> Extensions<'a, T> {
@@ -55,33 +55,12 @@ where
     }
 }
 
-ext_array!(SignatureSchemes, SignatureScheme);
-
-// TODO: maybe should be part of ext_array! macro
-impl<'a> CodecSized<'a> for SignatureSchemes<'a> {
-    const HEADER_SIZE: usize = 2;
-
-    fn data_size(&self) -> usize {
-        self.0.data_size()
-    }
-}
-
-ext_array!(ProtocolVersions, ProtocolVersion);
-
-// TODO: maybe should be part of ext_array! macro
-impl<'a> CodecSized<'a> for ProtocolVersions<'a> {
-    const HEADER_SIZE: usize = 1;
-
-    fn data_size(&self) -> usize {
-        self.0.data_size()
-    }
-}
+ext_array!(SignatureSchemes, 2, SignatureScheme);
+ext_array!(ProtocolVersions, 1, ProtocolVersion);
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::msgs::array::item::Item;
-    use std::vec::Vec;
 
     mod encode {
         use super::*;
@@ -158,8 +137,8 @@ mod tests {
         fn zero_length_signature_schemes() {
             let bytes = [0, 0];
             let mut dec = Decoder::new(&bytes);
-            let schemes = SignatureSchemes::decode(&mut dec).unwrap();
 
+            let schemes = SignatureSchemes::decode(&mut dec).unwrap();
             assert!(schemes.is_empty())
         }
 
@@ -167,11 +146,10 @@ mod tests {
         fn single_signature_scheme() {
             let bytes = [0, 2, 0x04, 0x01];
             let mut dec = Decoder::new(&bytes);
-            let schemes = SignatureSchemes::decode(&mut dec).unwrap();
 
             assert_eq!(
-                schemes.iter().collect::<Vec<Item<'_, SignatureScheme>>>(),
-                vec![SignatureScheme::RsaPkcs1Sha256],
+                SignatureSchemes::decode(&mut dec).unwrap(),
+                arr![SignatureScheme::RsaPkcs1Sha256].into(),
             );
         }
 
@@ -179,14 +157,14 @@ mod tests {
         fn multiple_signature_schemes() {
             let bytes = [0, 4, 0x04, 0x01, 0x05, 0x01];
             let mut dec = Decoder::new(&bytes);
-            let schemes = SignatureSchemes::decode(&mut dec).unwrap();
 
             assert_eq!(
-                schemes.iter().collect::<Vec<Item<'_, SignatureScheme>>>(),
-                vec![
+                SignatureSchemes::decode(&mut dec).unwrap(),
+                arr![
                     SignatureScheme::RsaPkcs1Sha256,
                     SignatureScheme::RsaPkcs1Sha384,
-                ],
+                ]
+                .into(),
             );
         }
 
@@ -194,20 +172,19 @@ mod tests {
         fn zero_length_protocol_versions() {
             let bytes = [0];
             let mut dec = Decoder::new(&bytes);
-            let versions = ProtocolVersions::decode(&mut dec).unwrap();
 
-            assert!(versions.is_empty())
+            let versions = ProtocolVersions::decode(&mut dec).unwrap();
+            assert!(versions.is_empty());
         }
 
         #[test]
         fn single_protocol_version() {
             let bytes = [2, 0x03, 0x04];
             let mut dec = Decoder::new(&bytes);
-            let versions = ProtocolVersions::decode(&mut dec).unwrap();
 
             assert_eq!(
-                versions.iter().collect::<Vec<Item<'_, ProtocolVersion>>>(),
-                vec![ProtocolVersion::TLSv1_3],
+                ProtocolVersions::decode(&mut dec).unwrap(),
+                arr![ProtocolVersion::TLSv1_3].into(),
             );
         }
 
@@ -215,11 +192,10 @@ mod tests {
         fn multiple_protocol_versions() {
             let bytes = [4, 0x03, 0x04, 0x03, 0x03];
             let mut dec = Decoder::new(&bytes);
-            let versions = ProtocolVersions::decode(&mut dec).unwrap();
 
             assert_eq!(
-                versions.iter().collect::<Vec<Item<'_, ProtocolVersion>>>(),
-                vec![ProtocolVersion::TLSv1_3, ProtocolVersion::TLSv1_2],
+                ProtocolVersions::decode(&mut dec).unwrap(),
+                arr![ProtocolVersion::TLSv1_3, ProtocolVersion::TLSv1_2].into(),
             );
         }
     }

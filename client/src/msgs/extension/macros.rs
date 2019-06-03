@@ -1,7 +1,7 @@
 // TODO: Maybe should be called `ext_arr` to be consistent with the `arr` macro
 macro_rules! ext_array {
-    ($ident: ident, $ty: ty) => {
-        #[derive(Debug, Clone)]
+    ($ident: ident, $header_size: expr, $ty: ty) => {
+        #[derive(Debug, Clone, PartialEq)]
         pub struct $ident<'a>(crate::msgs::array::Array<'a, $ty>);
 
         impl<'a> $ident<'a> {
@@ -32,6 +32,14 @@ macro_rules! ext_array {
                 Self::decode_len(dec)
                     .and_then(|len| Array::decode_items(len, dec))
                     .map(Self)
+            }
+        }
+
+        impl<'a> crate::msgs::CodecSized<'a> for $ident<'a> {
+            const HEADER_SIZE: usize = $header_size;
+
+            fn data_size(&self) -> usize {
+                self.0.data_size()
             }
         }
 

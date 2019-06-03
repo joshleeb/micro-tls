@@ -7,7 +7,7 @@ use crate::msgs::{
     Codec, Decoder, Encoder,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct ClientHelloPayload<'a> {
     pub client_version: ProtocolVersion,
     pub random: Random,
@@ -43,7 +43,6 @@ impl<'a> Codec<'a> for ClientHelloPayload<'a> {
 mod tests {
     use super::*;
     use crate::msgs::{
-        array::item::Item,
         enums::SignatureScheme,
         extension::{ProtocolVersions, SignatureSchemes},
     };
@@ -263,7 +262,7 @@ mod tests {
         fn hello_extension_empty_protocol_versions() {
             assert_eq!(
                 embed_bytes(ClientHelloPayload {
-                    extensions: Extensions::from(arr![ClientExtension::SupportedVersions(
+                    extensions: Extensions::from(arr![ClientExtension::from(
                         ProtocolVersions::empty(),
                     )]),
                     ..Default::default()
@@ -431,13 +430,7 @@ mod tests {
             let mut dec = Decoder::new(&bytes);
             let payload = ClientHelloPayload::decode(&mut dec).unwrap();
 
-            assert_eq!(
-                payload
-                    .cipher_suites
-                    .iter()
-                    .collect::<Vec<Item<'_, CipherSuite>>>(),
-                vec![CipherSuite::TlsAes128GcmSha256],
-            );
+            assert_eq!(payload.cipher_suites, arr![CipherSuite::TlsAes128GcmSha256],);
         }
 
         #[test]
@@ -457,11 +450,8 @@ mod tests {
             let payload = ClientHelloPayload::decode(&mut dec).unwrap();
 
             assert_eq!(
-                payload
-                    .cipher_suites
-                    .iter()
-                    .collect::<Vec<Item<'_, CipherSuite>>>(),
-                vec![
+                payload.cipher_suites,
+                arr![
                     CipherSuite::TlsAes128GcmSha256,
                     CipherSuite::TlsChaCha20Poly1305Sha256,
                 ],
@@ -482,11 +472,8 @@ mod tests {
             let payload = ClientHelloPayload::decode(&mut dec).unwrap();
 
             assert_eq!(
-                payload
-                    .compression_methods
-                    .iter()
-                    .collect::<Vec<Item<'_, CompressionMethod>>>(),
-                vec![CompressionMethod::Deflate],
+                payload.compression_methods,
+                arr![CompressionMethod::Deflate],
             );
         }
 
@@ -504,11 +491,8 @@ mod tests {
             let payload = ClientHelloPayload::decode(&mut dec).unwrap();
 
             assert_eq!(
-                payload
-                    .compression_methods
-                    .iter()
-                    .collect::<Vec<Item<'_, CompressionMethod>>>(),
-                vec![CompressionMethod::Null, CompressionMethod::Deflate],
+                payload.compression_methods,
+                arr![CompressionMethod::Null, CompressionMethod::Deflate],
             );
         }
 
@@ -525,17 +509,10 @@ mod tests {
             let mut dec = Decoder::new(&bytes);
             let payload = ClientHelloPayload::decode(&mut dec).unwrap();
 
-            let mut extensions = payload.extensions.iter();
-            match extensions.next() {
-                Some(Item::Owned(ClientExtension::SignatureAlgorithms(schemes))) => {
-                    assert!(schemes.is_empty())
-                }
-                other => panic!(
-                    "expected ClientExtension::SignatureAlgorithms, got {:?}",
-                    other
-                ),
-            };
-            assert!(extensions.next().is_none());
+            assert_eq!(
+                payload.extensions,
+                Extensions::from(arr![ClientExtension::from(SignatureSchemes::empty())])
+            );
         }
 
         #[test]
@@ -553,20 +530,12 @@ mod tests {
             let mut dec = Decoder::new(&bytes);
             let payload = ClientHelloPayload::decode(&mut dec).unwrap();
 
-            let mut extensions = payload.extensions.iter();
-            match extensions.next() {
-                Some(Item::Owned(ClientExtension::SignatureAlgorithms(schemes))) => {
-                    assert_eq!(
-                        schemes.iter().collect::<Vec<Item<'_, SignatureScheme>>>(),
-                        vec![SignatureScheme::RsaPkcs1Sha256]
-                    );
-                }
-                other => panic!(
-                    "expected ClientExtension::SignatureAlgorithms, got {:?}",
-                    other
-                ),
-            };
-            assert!(extensions.next().is_none());
+            assert_eq!(
+                payload.extensions,
+                Extensions::from(arr![ClientExtension::from(arr![
+                    SignatureScheme::RsaPkcs1Sha256
+                ])]),
+            );
         }
 
         #[test]
@@ -585,23 +554,13 @@ mod tests {
             let mut dec = Decoder::new(&bytes);
             let payload = ClientHelloPayload::decode(&mut dec).unwrap();
 
-            let mut extensions = payload.extensions.iter();
-            match extensions.next() {
-                Some(Item::Owned(ClientExtension::SignatureAlgorithms(schemes))) => {
-                    assert_eq!(
-                        schemes.iter().collect::<Vec<Item<'_, SignatureScheme>>>(),
-                        vec![
-                            SignatureScheme::RsaPkcs1Sha256,
-                            SignatureScheme::EcdsaNistp256Sha256,
-                        ],
-                    );
-                }
-                other => panic!(
-                    "expected ClientExtension::SignatureAlgorithms, got {:?}",
-                    other
-                ),
-            };
-            assert!(extensions.next().is_none());
+            assert_eq!(
+                payload.extensions,
+                Extensions::from(arr![ClientExtension::from(arr![
+                    SignatureScheme::RsaPkcs1Sha256,
+                    SignatureScheme::EcdsaNistp256Sha256,
+                ])]),
+            );
         }
 
         #[test]
@@ -617,17 +576,10 @@ mod tests {
             let mut dec = Decoder::new(&bytes);
             let payload = ClientHelloPayload::decode(&mut dec).unwrap();
 
-            let mut extensions = payload.extensions.iter();
-            match extensions.next() {
-                Some(Item::Owned(ClientExtension::SupportedVersions(versions))) => {
-                    assert!(versions.is_empty())
-                }
-                other => panic!(
-                    "expected ClientExtension::SupportedVersions, got {:?}",
-                    other
-                ),
-            };
-            assert!(extensions.next().is_none());
+            assert_eq!(
+                payload.extensions,
+                Extensions::from(arr![ClientExtension::from(ProtocolVersions::empty())])
+            );
         }
 
         #[test]
@@ -645,18 +597,10 @@ mod tests {
             let mut dec = Decoder::new(&bytes);
             let payload = ClientHelloPayload::decode(&mut dec).unwrap();
 
-            let mut extensions = payload.extensions.iter();
-            match extensions.next() {
-                Some(Item::Owned(ClientExtension::SupportedVersions(versions))) => assert_eq!(
-                    versions.iter().collect::<Vec<Item<'_, ProtocolVersion>>>(),
-                    vec![ProtocolVersion::TLSv1_2,]
-                ),
-                other => panic!(
-                    "expected ClientExtension::SupportedVersions, got {:?}",
-                    other
-                ),
-            };
-            assert!(extensions.next().is_none());
+            assert_eq!(
+                payload.extensions,
+                Extensions::from(arr![ClientExtension::from(arr![ProtocolVersion::TLSv1_2])]),
+            );
         }
 
         #[test]
@@ -675,18 +619,13 @@ mod tests {
             let mut dec = Decoder::new(&bytes);
             let payload = ClientHelloPayload::decode(&mut dec).unwrap();
 
-            let mut extensions = payload.extensions.iter();
-            match extensions.next() {
-                Some(Item::Owned(ClientExtension::SupportedVersions(versions))) => assert_eq!(
-                    versions.iter().collect::<Vec<Item<'_, ProtocolVersion>>>(),
-                    vec![ProtocolVersion::TLSv1_2, ProtocolVersion::TLSv1_3,]
-                ),
-                other => panic!(
-                    "expected ClientExtension::SupportedVersions, got {:?}",
-                    other
-                ),
-            };
-            assert!(extensions.next().is_none());
+            assert_eq!(
+                payload.extensions,
+                Extensions::from(arr![ClientExtension::from(arr![
+                    ProtocolVersion::TLSv1_2,
+                    ProtocolVersion::TLSv1_3
+                ])]),
+            );
         }
 
         #[test]
@@ -699,8 +638,8 @@ mod tests {
                 compression_methods: vec![],
                 extensions: vec![
                     r_ClientExtension::SupportedVersions(vec![
-                        r_ProtocolVersion::TLSv1_3,
                         r_ProtocolVersion::TLSv1_2,
+                        r_ProtocolVersion::TLSv1_3,
                     ]),
                     r_ClientExtension::SignatureAlgorithms(vec![
                         r_SignatureScheme::RSA_PKCS1_SHA256,
@@ -711,33 +650,16 @@ mod tests {
             let mut dec = Decoder::new(&bytes);
             let payload = ClientHelloPayload::decode(&mut dec).unwrap();
 
-            let mut extensions = payload.extensions.iter();
-            match extensions.next() {
-                Some(Item::Owned(ClientExtension::SupportedVersions(versions))) => assert_eq!(
-                    versions.iter().collect::<Vec<Item<'_, ProtocolVersion>>>(),
-                    vec![ProtocolVersion::TLSv1_3, ProtocolVersion::TLSv1_2]
-                ),
-                other => panic!(
-                    "expected ClientExtension::SupportedVersions, got {:?}",
-                    other
-                ),
-            };
-            match extensions.next() {
-                Some(Item::Owned(ClientExtension::SignatureAlgorithms(schemes))) => {
-                    assert_eq!(
-                        schemes.iter().collect::<Vec<Item<'_, SignatureScheme>>>(),
-                        vec![
-                            SignatureScheme::RsaPkcs1Sha256,
-                            SignatureScheme::EcdsaNistp256Sha256,
-                        ],
-                    );
-                }
-                other => panic!(
-                    "expected ClientExtension::SignatureAlgorithms, got {:?}",
-                    other
-                ),
-            };
-            assert!(extensions.next().is_none());
+            assert_eq!(
+                payload.extensions,
+                Extensions::from(arr![
+                    ClientExtension::from(arr![ProtocolVersion::TLSv1_2, ProtocolVersion::TLSv1_3]),
+                    ClientExtension::from(arr![
+                        SignatureScheme::RsaPkcs1Sha256,
+                        SignatureScheme::EcdsaNistp256Sha256,
+                    ]),
+                ])
+            );
         }
     }
 

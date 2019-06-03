@@ -18,6 +18,7 @@ pub trait Codec<'a>: Sized {
     fn decode(_dec: &mut Decoder<'a>) -> Option<Self>;
 }
 
+// TODO: Tests for CodecSized
 pub trait CodecSized<'a> {
     // TODO: Replace usize with enum to remove the unimplemented catch all in the match statements.
     // How many bytes should data_size() be put into?
@@ -62,6 +63,7 @@ pub struct Encoder<'a> {
     len: usize,
 }
 
+// TODO: Tests for Encoder.
 impl<'a> Encoder<'a> {
     pub fn new<T: Into<ManagedSlice<'a, u8>>>(buf: T) -> Self {
         Self {
@@ -117,6 +119,7 @@ impl<'a> Encoder<'a> {
     }
 }
 
+// TODO: Tests for Decoder.
 pub struct Decoder<'a> {
     bytes: &'a [u8],
     offset: usize,

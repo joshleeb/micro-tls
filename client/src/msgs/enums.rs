@@ -8,12 +8,7 @@ msg_enum! {
         TLSv1_3 => 0x0304,
     }
 }
-
-impl Default for ProtocolVersion {
-    fn default() -> Self {
-        ProtocolVersion::TLSv1_2
-    }
-}
+enum_default!(ProtocolVersion, TLSv1_2);
 
 msg_enum! {
     CompressionMethod, u8;
@@ -23,12 +18,7 @@ msg_enum! {
         LSZ => 0x40
     }
 }
-
-impl Default for CompressionMethod {
-    fn default() -> Self {
-        CompressionMethod::Null
-    }
-}
+enum_default!(CompressionMethod, Null);
 
 msg_enum! {
     CipherSuite, u16;

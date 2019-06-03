@@ -51,3 +51,13 @@ macro_rules! msg_enum {
         }
     };
 }
+
+macro_rules! enum_default {
+    ($ident: ident, $var: ident) => {
+        impl Default for $ident {
+            fn default() -> Self {
+                $ident::$var
+            }
+        }
+    };
+}

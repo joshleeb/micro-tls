@@ -1,10 +1,16 @@
 use crate::msgs::{array::iter::ArrayIter, Codec, CodecSized, Decoder, Encoder};
 use core::borrow::Borrow;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Item<'a, T: Codec<'a>> {
     Borrowed(&'a T),
     Owned(T),
+}
+
+impl<'a, T: PartialEq + Codec<'a>> PartialEq for Item<'a, T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_ref() == other.as_ref()
+    }
 }
 
 impl<'a, T: PartialEq + Codec<'a>> PartialEq<T> for Item<'a, T> {
@@ -28,7 +34,7 @@ impl<'a, T: Codec<'a>> Borrow<T> for Item<'a, T> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Items<'a, T: Codec<'a> + CodecSized<'a>> {
     Typed(&'a [T]),
     Bytes(&'a [u8]),
@@ -53,6 +59,8 @@ impl<'a, T: Codec<'a> + CodecSized<'a>> Items<'a, T> {
         }
     }
 
+    // TODO: Conform this with Codec trait
+    //  - Then we can make CodecSized: Codec and remove a decent amount of boiler plate.
     pub fn decode(len: usize, dec: &mut Decoder<'a>) -> Option<Self> {
         let bytes = dec.take(len)?;
         Some(Items::Bytes(bytes))
@@ -73,6 +81,15 @@ impl<'a, T: Codec<'a> + CodecSized<'a>> CodecSized<'a> for Items<'a, T> {
 impl<'a, T: Codec<'a> + CodecSized<'a>> From<&'a [T]> for Items<'a, T> {
     fn from(inner: &'a [T]) -> Self {
         Items::Typed(inner)
+    }
+}
+
+impl<'a, T> PartialEq for Items<'a, T>
+where
+    T: PartialEq + Codec<'a> + CodecSized<'a>,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.iter().zip(other.iter()).all(|(a, b)| a == b)
     }
 }
 

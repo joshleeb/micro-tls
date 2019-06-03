@@ -14,6 +14,15 @@ pub struct Array<'a, T: Codec<'a> + CodecSized<'a>> {
     len: usize,
 }
 
+impl<'a, T> PartialEq for Array<'a, T>
+where
+    T: PartialEq + Codec<'a> + CodecSized<'a>,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.items == other.items
+    }
+}
+
 impl<'a, T: Codec<'a> + CodecSized<'a>> Array<'a, T> {
     pub fn empty() -> Self {
         Self {
@@ -91,7 +100,6 @@ mod tests {
     fn empty_len() {
         let items: Array<'_, u8> = arr![];
 
-        assert_eq!(items.len(), 0);
         assert!(items.is_empty());
     }
 
@@ -204,10 +212,7 @@ mod tests {
             let mut dec = Decoder::new(&bytes);
             let items: Array<'_, u8> = Array::decode(&mut dec).unwrap();
 
-            assert_eq!(
-                items.iter().collect::<Vec<Item<'_, u8>>>(),
-                vec![96, 97, 98, 99]
-            );
+            assert_eq!(items, arr![96, 97, 98, 99]);
             assert_eq!(items.data_size(), 4);
         }
 
@@ -217,10 +222,7 @@ mod tests {
             let mut dec = Decoder::new(&bytes);
             let items: Array<'_, u16> = Array::decode(&mut dec).unwrap();
 
-            assert_eq!(
-                items.iter().collect::<Vec<Item<'_, u16>>>(),
-                vec![96, 97, 98, 99]
-            );
+            assert_eq!(items, arr![96, 97, 98, 99]);
             assert_eq!(items.data_size(), 8);
         }
     }

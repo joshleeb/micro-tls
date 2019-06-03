@@ -5,7 +5,8 @@ use crate::msgs::{
     Codec, CodecSized, Decoder, Encoder,
 };
 
-#[derive(Debug)]
+// TODO: Add unknown client extension
+#[derive(Debug, PartialEq)]
 pub enum ClientExtension<'a> {
     SignatureAlgorithms(SignatureSchemes<'a>),
     SupportedVersions(ProtocolVersions<'a>),
@@ -52,11 +53,12 @@ impl<'a> Codec<'a> for ClientExtension<'a> {
 
         match ty {
             ExtensionType::SignatureAlgorithms => {
-                SignatureSchemes::decode(&mut sub).map(ClientExtension::SignatureAlgorithms)
+                SignatureSchemes::decode(&mut sub).map(ClientExtension::from)
             }
             ExtensionType::SupportedVersions => {
-                ProtocolVersions::decode(&mut sub).map(ClientExtension::SupportedVersions)
+                ProtocolVersions::decode(&mut sub).map(ClientExtension::from)
             }
+            // TODO: Handle unknown extension type
             ExtensionType::Unknown(_) => unimplemented!(),
         }
     }
@@ -72,13 +74,25 @@ impl<'a> CodecSized<'a> for ClientExtension<'a> {
 
 impl<'a> From<Array<'a, SignatureScheme>> for ClientExtension<'a> {
     fn from(data: Array<'a, SignatureScheme>) -> Self {
-        ClientExtension::SignatureAlgorithms(SignatureSchemes::from(data))
+        ClientExtension::from(SignatureSchemes::from(data))
+    }
+}
+
+impl<'a> From<SignatureSchemes<'a>> for ClientExtension<'a> {
+    fn from(data: SignatureSchemes<'a>) -> Self {
+        ClientExtension::SignatureAlgorithms(data)
     }
 }
 
 impl<'a> From<Array<'a, ProtocolVersion>> for ClientExtension<'a> {
     fn from(data: Array<'a, ProtocolVersion>) -> Self {
-        ClientExtension::SupportedVersions(ProtocolVersions::from(data))
+        ClientExtension::from(ProtocolVersions::from(data))
+    }
+}
+
+impl<'a> From<ProtocolVersions<'a>> for ClientExtension<'a> {
+    fn from(data: ProtocolVersions<'a>) -> Self {
+        ClientExtension::SupportedVersions(data)
     }
 }
 
@@ -92,7 +106,7 @@ mod tests {
 
         #[test]
         fn empty_signature_algorithms() {
-            let ext = ClientExtension::SignatureAlgorithms(SignatureSchemes::empty());
+            let ext = ClientExtension::from(SignatureSchemes::empty());
             let mut enc = Encoder::new(vec![]);
             ext.encode(&mut enc);
 
@@ -101,17 +115,130 @@ mod tests {
         }
 
         #[test]
+        fn single_signature_algorithm() {
+            let ext = ClientExtension::from(arr![SignatureScheme::RsaPkcs1Sha256]);
+            let mut enc = Encoder::new(vec![]);
+            ext.encode(&mut enc);
+
+            assert_eq!(ext.data_size(), 8);
+            assert_eq!(enc.bytes(), [0x00, 0x0d, 0, 4, 0, 2, 4, 1]);
+        }
+
+        #[test]
+        fn multiple_signature_algorithms() {
+            let ext = ClientExtension::from(arr![
+                SignatureScheme::RsaPkcs1Sha256,
+                SignatureScheme::EcdsaNistp256Sha256,
+            ]);
+            let mut enc = Encoder::new(vec![]);
+            ext.encode(&mut enc);
+
+            assert_eq!(ext.data_size(), 10);
+            assert_eq!(enc.bytes(), [0x00, 0x0d, 0, 6, 0, 4, 4, 1, 4, 3]);
+        }
+
+        #[test]
         fn empty_supported_versions() {
-            let ext = ClientExtension::SupportedVersions(ProtocolVersions::empty());
+            let ext = ClientExtension::from(ProtocolVersions::empty());
             let mut enc = Encoder::new(vec![]);
             ext.encode(&mut enc);
 
             assert_eq!(ext.data_size(), 5);
             assert_eq!(enc.bytes(), [0x00, 0x2b, 0, 1, 0]);
         }
+
+        #[test]
+        fn single_protocol_version() {
+            let ext = ClientExtension::from(arr![ProtocolVersion::TLSv1_2]);
+            let mut enc = Encoder::new(vec![]);
+            ext.encode(&mut enc);
+
+            assert_eq!(ext.data_size(), 7);
+            assert_eq!(enc.bytes(), [0x00, 0x2b, 0, 3, 2, 3, 3]);
+        }
+
+        #[test]
+        fn multiple_protocol_versions() {
+            let ext =
+                ClientExtension::from(arr![ProtocolVersion::TLSv1_2, ProtocolVersion::TLSv1_3]);
+            let mut enc = Encoder::new(vec![]);
+            ext.encode(&mut enc);
+
+            assert_eq!(ext.data_size(), 9);
+            assert_eq!(enc.bytes(), [0x00, 0x2b, 0, 5, 4, 3, 3, 3, 4]);
+        }
     }
 
     mod decode {
         use super::*;
+
+        #[test]
+        fn empty_signature_algorithms() {
+            let bytes = [0x00, 0x0d, 0, 2, 0, 0];
+            let mut dec = Decoder::new(&bytes);
+
+            assert_eq!(
+                ClientExtension::decode(&mut dec).unwrap(),
+                ClientExtension::from(SignatureSchemes::empty()),
+            );
+        }
+
+        #[test]
+        fn single_signature_algorithm() {
+            let bytes = [0x00, 0x0d, 0, 4, 0, 2, 4, 1];
+            let mut dec = Decoder::new(&bytes);
+
+            assert_eq!(
+                ClientExtension::decode(&mut dec).unwrap(),
+                ClientExtension::from(arr![SignatureScheme::RsaPkcs1Sha256]),
+            );
+        }
+
+        #[test]
+        fn multiple_signature_algorithms() {
+            let bytes = [0x00, 0x0d, 0, 6, 0, 4, 4, 1, 4, 3];
+            let mut dec = Decoder::new(&bytes);
+
+            assert_eq!(
+                ClientExtension::decode(&mut dec).unwrap(),
+                ClientExtension::from(arr![
+                    SignatureScheme::RsaPkcs1Sha256,
+                    SignatureScheme::EcdsaNistp256Sha256,
+                ]),
+            );
+        }
+
+        #[test]
+        fn empty_protocol_versions() {
+            let bytes = [0x00, 0x2b, 0, 1, 0];
+            let mut dec = Decoder::new(&bytes);
+
+            assert_eq!(
+                ClientExtension::decode(&mut dec).unwrap(),
+                ClientExtension::from(ProtocolVersions::empty()),
+            );
+        }
+
+        #[test]
+        fn single_protocol_version() {
+            let bytes = [0x00, 0x2b, 0, 3, 2, 3, 3];
+            let mut dec = Decoder::new(&bytes);
+
+            assert_eq!(
+                ClientExtension::decode(&mut dec).unwrap(),
+                ClientExtension::from(arr![ProtocolVersion::TLSv1_2]),
+            );
+        }
+
+        #[test]
+        fn multiple_protocol_versions() {
+            let bytes = [0x00, 0x2b, 0, 5, 4, 3, 3, 3, 4];
+            let mut dec = Decoder::new(&bytes);
+
+            assert_eq!(
+                ClientExtension::decode(&mut dec).unwrap(),
+                ClientExtension::from(arr![ProtocolVersion::TLSv1_2, ProtocolVersion::TLSv1_3,]),
+            );
+        }
     }
 }
