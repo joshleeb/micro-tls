@@ -1,4 +1,4 @@
-use crate::msgs::{Codec, Decoder};
+use crate::msgs::{array::item::Item, Codec, Decoder};
 use core::{marker::PhantomData, slice};
 
 pub enum ArrayIter<'a, T: Codec<'a>> {
@@ -6,13 +6,13 @@ pub enum ArrayIter<'a, T: Codec<'a>> {
     Bytes(BytesArrayIter<'a, T>),
 }
 
-impl<'a, T: Copy + Codec<'a>> Iterator for ArrayIter<'a, T> {
-    type Item = T;
+impl<'a, T: Codec<'a>> Iterator for ArrayIter<'a, T> {
+    type Item = Item<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            ArrayIter::Typed(ref mut t) => t.next(),
-            ArrayIter::Bytes(ref mut b) => b.next(),
+            ArrayIter::Typed(ref mut t) => t.next().map(Item::Borrowed),
+            ArrayIter::Bytes(ref mut b) => b.next().map(Item::Owned),
         }
     }
 }
@@ -32,19 +32,19 @@ impl<'a, T: Codec<'a>> From<Decoder<'a>> for ArrayIter<'a, T> {
     }
 }
 
-struct TypedArrayIter<'a, T: Codec<'a>> {
+pub struct TypedArrayIter<'a, T: Codec<'a>> {
     it: slice::Iter<'a, T>,
 }
 
-impl<'a, T: Copy + Codec<'a>> Iterator for TypedArrayIter<'a, T> {
-    type Item = T;
+impl<'a, T: Codec<'a>> Iterator for TypedArrayIter<'a, T> {
+    type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.it.next().copied()
+        self.it.next()
     }
 }
 
-struct BytesArrayIter<'a, T: Codec<'a>> {
+pub struct BytesArrayIter<'a, T: Codec<'a>> {
     dec: Decoder<'a>,
     phantom: PhantomData<T>,
 }

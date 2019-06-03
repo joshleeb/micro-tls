@@ -1,4 +1,32 @@
 use crate::msgs::{array::iter::ArrayIter, Codec, CodecSized, Decoder, Encoder};
+use core::borrow::Borrow;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Item<'a, T: Codec<'a>> {
+    Borrowed(&'a T),
+    Owned(T),
+}
+
+impl<'a, T: PartialEq + Codec<'a>> PartialEq<T> for Item<'a, T> {
+    fn eq(&self, other: &T) -> bool {
+        self.as_ref() == other
+    }
+}
+
+impl<'a, T: Codec<'a>> AsRef<T> for Item<'a, T> {
+    fn as_ref(&self) -> &T {
+        self.borrow()
+    }
+}
+
+impl<'a, T: Codec<'a>> Borrow<T> for Item<'a, T> {
+    fn borrow(&self) -> &T {
+        match self {
+            Item::Borrowed(ref_t) => ref_t,
+            Item::Owned(t) => &t,
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Items<'a, T: Codec<'a> + CodecSized<'a>> {
@@ -64,21 +92,21 @@ mod tests {
     fn typed_iter() {
         let items: Items<'_, u8> = Items::Typed(&[7, 8, 9]);
 
-        assert_eq!(items.iter().collect::<Vec<u8>>(), vec![7, 8, 9]);
+        assert_eq!(items.iter().collect::<Vec<Item<'_, u8>>>(), vec![7, 8, 9]);
     }
 
     #[test]
     fn single_bytes_iter() {
         let items: Items<'_, u8> = Items::Bytes(&[7, 8, 9]);
 
-        assert_eq!(items.iter().collect::<Vec<u8>>(), vec![7, 8, 9]);
+        assert_eq!(items.iter().collect::<Vec<Item<'_, u8>>>(), vec![7, 8, 9]);
     }
 
     #[test]
     fn multi_bytes_iter() {
         let items: Items<'_, u16> = Items::Bytes(&[0, 7, 0, 8, 0, 9]);
 
-        assert_eq!(items.iter().collect::<Vec<u16>>(), vec![7, 8, 9]);
+        assert_eq!(items.iter().collect::<Vec<Item<'_, u16>>>(), vec![7, 8, 9]);
     }
 
     mod encode {

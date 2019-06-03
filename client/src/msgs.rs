@@ -100,6 +100,7 @@ impl<'a> Encoder<'a> {
         }
     }
 
+    // TODO: Maybe rename to `as_bytes` to be more consistent with the decoder.
     pub fn bytes(&self) -> &[u8] {
         match self.bytes {
             ManagedSlice::Borrowed(ref bytes) => bytes,

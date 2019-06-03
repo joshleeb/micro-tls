@@ -9,11 +9,15 @@ macro_rules! ext_array {
                 Self(Array::empty())
             }
 
+            pub fn iter(&self) -> crate::msgs::array::iter::ArrayIter<'a, $ty> {
+                self.0.iter()
+            }
+
             fn len(&self) -> usize {
                 self.0.len()
             }
 
-            fn is_empty(&self) -> bool {
+            pub fn is_empty(&self) -> bool {
                 self.0.is_empty()
             }
         }
@@ -21,13 +25,13 @@ macro_rules! ext_array {
         impl<'a> crate::msgs::Codec<'a> for $ident<'a> {
             fn encode(&self, enc: &mut crate::msgs::Encoder<'a>) {
                 self.encode_len(enc);
-                for item in self.0.iter() {
-                    item.encode(enc);
-                }
+                self.0.encode_items(enc);
             }
 
             fn decode(dec: &mut crate::msgs::Decoder<'a>) -> Option<Self> {
-                crate::msgs::array::Array::decode(dec).map(Self)
+                Self::decode_len(dec)
+                    .and_then(|len| Array::decode_items(len, dec))
+                    .map(Self)
             }
         }
 
