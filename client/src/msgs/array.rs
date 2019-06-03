@@ -35,12 +35,8 @@ impl<'a, T: Codec<'a> + CodecSized<'a>> Array<'a, T> {
         self.items.iter()
     }
 
-    pub fn len(&self) -> usize {
-        self.len
-    }
-
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.len == 0
     }
 
     pub(crate) fn encode_items(&self, enc: &mut Encoder<'a>) {
@@ -107,7 +103,6 @@ mod tests {
     fn single_item() {
         let items: Array<'_, u8> = arr![99];
 
-        assert_eq!(items.len(), 1);
         assert_eq!(items.iter().collect::<Vec<Item<'_, u8>>>(), vec![99]);
     }
 
@@ -115,7 +110,6 @@ mod tests {
     fn multiple_items() {
         let items: Array<'_, u8> = arr![98, 99];
 
-        assert_eq!(items.len(), 2);
         assert_eq!(items.iter().collect::<Vec<Item<'_, u8>>>(), vec![98, 99]);
     }
 
