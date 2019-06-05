@@ -58,7 +58,7 @@ impl<'a> Codec<'a> for ClientExtension<'a> {
             ExtensionType::SupportedVersions => {
                 ProtocolVersions::decode(&mut sub).map(ClientExtension::from)
             }
-            // TODO: Handle unknown extension type
+            // TODO: Handle unknown client extension type
             ExtensionType::Unknown(_) => unimplemented!(),
         }
     }
@@ -209,7 +209,7 @@ mod tests {
         }
 
         #[test]
-        fn empty_protocol_versions() {
+        fn empty_supported_versions() {
             let bytes = [0x00, 0x2b, 0, 1, 0];
             let mut dec = Decoder::new(&bytes);
 
@@ -220,7 +220,7 @@ mod tests {
         }
 
         #[test]
-        fn single_protocol_version() {
+        fn single_supported_versions() {
             let bytes = [0x00, 0x2b, 0, 3, 2, 3, 3];
             let mut dec = Decoder::new(&bytes);
 
@@ -231,7 +231,7 @@ mod tests {
         }
 
         #[test]
-        fn multiple_protocol_versions() {
+        fn multiple_supported_versions() {
             let bytes = [0x00, 0x2b, 0, 5, 4, 3, 3, 3, 4];
             let mut dec = Decoder::new(&bytes);
 

@@ -28,6 +28,7 @@ msg_enum! {
         TlsChaCha20Poly1305Sha256 => 0x1303,
     }
 }
+enum_default!(CipherSuite, TlsAes128GcmSha256);
 
 msg_enum! {
     ExtensionType, u16;

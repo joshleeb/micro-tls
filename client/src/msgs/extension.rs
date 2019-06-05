@@ -4,8 +4,10 @@ use crate::msgs::{
     Codec, CodecSized, Decoder, Encoder,
 };
 use client::ClientExtension;
+use server::{ServerExtension, ServerRetryExtension};
 
 pub mod client;
+pub mod server;
 
 #[macro_use]
 mod macros;
@@ -25,6 +27,10 @@ impl<'a, T: CodecSized<'a>> Extensions<'a, T> {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
+
+    pub fn encode_extensions(&self, enc: &mut Encoder<'a>) {
+        self.0.encode(enc);
+    }
 }
 
 impl<'a, T: CodecSized<'a>> Codec<'a> for Extensions<'a, T> {
@@ -32,7 +38,7 @@ impl<'a, T: CodecSized<'a>> Codec<'a> for Extensions<'a, T> {
         if self.0.is_empty() {
             return;
         }
-        self.0.encode(enc);
+        self.encode_extensions(enc);
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
@@ -49,6 +55,24 @@ impl<'a, T: CodecSized<'a>> Default for Extensions<'a, T> {
 impl<'a, T> From<T> for Extensions<'a, ClientExtension<'a>>
 where
     T: Into<Array<'a, ClientExtension<'a>>>,
+{
+    fn from(data: T) -> Self {
+        Self(data.into())
+    }
+}
+
+impl<'a, T> From<T> for Extensions<'a, ServerExtension>
+where
+    T: Into<Array<'a, ServerExtension>>,
+{
+    fn from(data: T) -> Self {
+        Self(data.into())
+    }
+}
+
+impl<'a, T> From<T> for Extensions<'a, ServerRetryExtension>
+where
+    T: Into<Array<'a, ServerRetryExtension>>,
 {
     fn from(data: T) -> Self {
         Self(data.into())

@@ -398,7 +398,7 @@ mod tests {
             let mut dec = Decoder::new(&bytes);
             let payload = ClientHelloPayload::decode(&mut dec).unwrap();
 
-            assert_eq!(payload.random, [9; 32].into());
+            assert_eq!(payload.random, Random::from([9; 32]));
         }
 
         #[test]

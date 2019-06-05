@@ -9,7 +9,7 @@ libc = { version = "0.2.53", default-features = false }
 managed = "0.7.1"
 
 [[test]]
-name = "integration_tests"
+name = "integration-tests"
 path = "tests/lib.rs"
 
 [dev-dependencies]

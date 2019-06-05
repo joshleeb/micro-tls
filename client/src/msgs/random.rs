@@ -23,6 +23,12 @@ impl<'a> Codec<'a> for Random {
     }
 }
 
+impl PartialEq<[u8; 32]> for Random {
+    fn eq(&self, other: &[u8; 32]) -> bool {
+        self.0 == *other
+    }
+}
+
 impl From<[u8; 32]> for Random {
     fn from(bytes: [u8; 32]) -> Self {
         Self(bytes)

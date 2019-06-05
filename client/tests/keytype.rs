@@ -37,7 +37,6 @@ impl KeyType {
     }
 
     fn path(&self, key_file: &str) -> PathBuf {
-        println!("{}", key_file);
         let test_keys_path = PathBuf::from("../test-keys");
         match self {
             KeyType::RSA => test_keys_path.join("rsa").join(key_file),
