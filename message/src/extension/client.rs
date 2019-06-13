@@ -1,8 +1,8 @@
-use crate::msgs::{
+use crate::{
     array::Array,
+    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized},
     enums::{ExtensionType, ProtocolVersion, SignatureScheme},
     extension::{ProtocolVersions, SignatureSchemes},
-    Codec, CodecSized, Decoder, Encoder,
 };
 
 // TODO: Add unknown client extension
@@ -21,7 +21,7 @@ impl<'a> ClientExtension<'a> {
     }
 
     // TODO: Document this.
-    pub fn ext_size(&self) -> usize {
+    fn ext_size(&self) -> usize {
         match self {
             ClientExtension::SignatureAlgorithms(ref r) => {
                 SignatureSchemes::HEADER_SIZE + r.data_size()
@@ -99,7 +99,7 @@ impl<'a> From<ProtocolVersions<'a>> for ClientExtension<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::msgs::extension::{ProtocolVersions, SignatureSchemes};
+    use crate::extension::{ProtocolVersions, SignatureSchemes};
 
     mod encode {
         use super::*;

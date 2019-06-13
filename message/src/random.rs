@@ -1,13 +1,7 @@
-use crate::msgs::{Codec, Decoder, Encoder};
+use crate::codec::{decoder::Decoder, encoder::Encoder, Codec};
 
 #[derive(Debug, Default, PartialEq)]
 pub struct Random([u8; 32]);
-
-impl Random {
-    pub fn empty() -> Self {
-        Self::default()
-    }
-}
 
 impl<'a> Codec<'a> for Random {
     fn encode(&self, enc: &mut Encoder<'a>) {
@@ -44,7 +38,7 @@ mod tests {
 
         #[test]
         fn multiple_bytes() {
-            let random = Random::empty();
+            let random = Random::default();
             let mut enc = Encoder::new(vec![]);
             random.encode(&mut enc);
 
@@ -70,7 +64,7 @@ mod tests {
             let mut dec = Decoder::new(&bytes);
             let random = Random::decode(&mut dec).unwrap();
 
-            assert_eq!(random, Random::empty());
+            assert_eq!(random, Random::default());
         }
     }
 }

@@ -2,14 +2,14 @@
 macro_rules! ext_array {
     ($ident: ident, $header_size: expr, $ty: ty) => {
         #[derive(Debug, Clone, PartialEq)]
-        pub struct $ident<'a>(crate::msgs::array::Array<'a, $ty>);
+        pub struct $ident<'a>(crate::array::Array<'a, $ty>);
 
         impl<'a> $ident<'a> {
             pub fn empty() -> Self {
                 Self(Array::empty())
             }
 
-            pub fn iter(&self) -> crate::msgs::array::iter::ArrayIter<'a, $ty> {
+            pub fn iter(&self) -> crate::array::iter::ArrayIter<'a, $ty> {
                 self.0.iter()
             }
 
@@ -18,20 +18,20 @@ macro_rules! ext_array {
             }
         }
 
-        impl<'a> crate::msgs::Codec<'a> for $ident<'a> {
-            fn encode(&self, enc: &mut crate::msgs::Encoder<'a>) {
+        impl<'a> crate::codec::Codec<'a> for $ident<'a> {
+            fn encode(&self, enc: &mut crate::codec::encoder::Encoder<'a>) {
                 self.encode_len(enc);
                 self.0.encode_items(enc);
             }
 
-            fn decode(dec: &mut crate::msgs::Decoder<'a>) -> Option<Self> {
+            fn decode(dec: &mut crate::codec::decoder::Decoder<'a>) -> Option<Self> {
                 Self::decode_len(dec)
                     .and_then(|len| Array::decode_items(len, dec))
                     .map(Self)
             }
         }
 
-        impl<'a> crate::msgs::CodecSized<'a> for $ident<'a> {
+        impl<'a> crate::codec::CodecSized<'a> for $ident<'a> {
             const HEADER_SIZE: usize = $header_size;
 
             fn data_size(&self) -> usize {
@@ -39,8 +39,8 @@ macro_rules! ext_array {
             }
         }
 
-        impl<'a> From<crate::msgs::array::Array<'a, $ty>> for $ident<'a> {
-            fn from(data: crate::msgs::array::Array<'a, $ty>) -> Self {
+        impl<'a> From<crate::array::Array<'a, $ty>> for $ident<'a> {
+            fn from(data: crate::array::Array<'a, $ty>) -> Self {
                 Self(data.into())
             }
         }

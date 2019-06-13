@@ -1,8 +1,8 @@
-use crate::msgs::{Codec, CodecSized, Decoder, Encoder};
+use crate::codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized};
 use iter::ArrayIter;
 
 #[macro_use]
-pub mod macros;
+mod macros;
 
 pub mod item;
 pub mod iter;
@@ -18,13 +18,6 @@ impl<'a, T: CodecSized<'a>> Array<'a, T> {
         arr![]
     }
 
-    pub fn iter(&self) -> ArrayIter<'a, T> {
-        match self {
-            Array::Typed(t) => ArrayIter::from(t.iter()),
-            Array::Bytes(b) => ArrayIter::from(Decoder::new(b)),
-        }
-    }
-
     pub fn encode_items(&self, enc: &mut Encoder<'a>) {
         match self {
             Array::Typed(t) => t.iter().for_each(|item| item.encode(enc)),
@@ -35,6 +28,13 @@ impl<'a, T: CodecSized<'a>> Array<'a, T> {
     pub fn decode_items(len: usize, dec: &mut Decoder<'a>) -> Option<Self> {
         let bytes = dec.take(len)?;
         Some(Array::Bytes(bytes))
+    }
+
+    pub fn iter(&self) -> ArrayIter<'a, T> {
+        match self {
+            Array::Typed(t) => ArrayIter::from(t.iter()),
+            Array::Bytes(b) => ArrayIter::from(Decoder::new(b)),
+        }
     }
 
     pub fn is_empty(&self) -> bool {

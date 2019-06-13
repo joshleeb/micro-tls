@@ -1,4 +1,5 @@
-use crate::msgs::{
+use crate::{
+    codec::{decoder::Decoder, encoder::Encoder, Codec},
     enums::{CipherSuite, CompressionMethod, ProtocolVersion},
     extension::{
         server::{ServerExtension, ServerRetryExtension},
@@ -6,17 +7,16 @@ use crate::msgs::{
     },
     random::Random,
     session::SessionId,
-    Codec, Decoder, Encoder,
 };
 
 #[derive(Debug, Default, PartialEq)]
 pub struct ServerHelloPayload<'a> {
-    pub server_version: ProtocolVersion,
-    pub random: Random,
-    pub session_id: SessionId,
-    pub cipher_suite: CipherSuite,
-    pub compression_method: CompressionMethod,
-    pub extensions: Extensions<'a, ServerExtension>,
+    server_version: ProtocolVersion,
+    random: Random,
+    session_id: SessionId,
+    cipher_suite: CipherSuite,
+    compression_method: CompressionMethod,
+    extensions: Extensions<'a, ServerExtension>,
 }
 
 impl<'a> Codec<'a> for ServerHelloPayload<'a> {
@@ -48,10 +48,10 @@ static SERVER_HELLO_RETRY_RANDOM: [u8; 32] = [
 
 #[derive(Debug, Default, PartialEq)]
 pub struct ServerHelloRetryPayload<'a> {
-    pub server_version: ProtocolVersion,
-    pub session_id: SessionId,
-    pub cipher_suite: CipherSuite,
-    pub extensions: Extensions<'a, ServerRetryExtension>,
+    server_version: ProtocolVersion,
+    session_id: SessionId,
+    cipher_suite: CipherSuite,
+    extensions: Extensions<'a, ServerRetryExtension>,
 }
 
 impl<'a> Codec<'a> for ServerHelloRetryPayload<'a> {
@@ -248,7 +248,7 @@ mod tests {
             let payload = ServerHelloPayload::decode(&mut dec).unwrap();
 
             assert_eq!(payload.server_version, ProtocolVersion::TLSv1_2);
-            assert_eq!(payload.random, Random::empty());
+            assert_eq!(payload.random, Random::default());
             assert!(payload.session_id.is_empty());
             assert_eq!(payload.cipher_suite, CipherSuite::TlsAes128GcmSha256);
             assert_eq!(payload.compression_method, CompressionMethod::Null);

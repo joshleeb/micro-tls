@@ -1,5 +1,5 @@
 [package]
-name = "mtls-client"
+name = "mtls-message"
 version = "0.1.0"
 authors = ["Josh Leeb-du Toit <mail@joshleeb.com>"]
 edition = "2018"
@@ -7,11 +7,6 @@ edition = "2018"
 [dependencies]
 libc = { version = "0.2.53", default-features = false }
 managed = "0.7.1"
-mtls-message = { path = "../message" }
-
-[[test]]
-name = "integration-tests"
-path = "tests/lib.rs"
 
 [dev-dependencies]
 webpki = "0.19.1"

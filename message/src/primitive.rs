@@ -1,4 +1,4 @@
-use crate::msgs::{Codec, CodecSized, Decoder, Encoder};
+use crate::codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized};
 use core::{mem, u16, u8};
 
 impl<'a> Codec<'a> for u8 {
@@ -19,15 +19,9 @@ impl<'a> CodecSized<'a> for u8 {
     }
 }
 
-fn put_u16(v: u16, buf: &mut [u8; 2]) {
-    buf[0] = (v >> 8) as u8;
-    buf[1] = v as u8;
-}
-
 impl<'a> Codec<'a> for u16 {
     fn encode(&self, enc: &mut Encoder<'a>) {
-        let mut buf = [0; 2];
-        put_u16(*self, &mut buf);
+        let buf = [(*self >> 8) as u8, *self as u8];
         enc.append(buf);
     }
 

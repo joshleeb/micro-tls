@@ -1,7 +1,7 @@
-use crate::msgs::{
+use crate::{
     array::{iter::ArrayIter, Array},
+    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized},
     enums::{ProtocolVersion, SignatureScheme},
-    Codec, CodecSized, Decoder, Encoder,
 };
 use client::ClientExtension;
 use server::{ServerExtension, ServerRetryExtension};
@@ -20,16 +20,16 @@ impl<'a, T: CodecSized<'a>> Extensions<'a, T> {
         Self(Array::empty())
     }
 
+    pub fn encode_extensions(&self, enc: &mut Encoder<'a>) {
+        self.0.encode(enc);
+    }
+
     pub fn iter(&self) -> ArrayIter<'a, T> {
         self.0.iter()
     }
 
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
-    }
-
-    pub fn encode_extensions(&self, enc: &mut Encoder<'a>) {
-        self.0.encode(enc);
     }
 }
 
@@ -79,6 +79,7 @@ where
     }
 }
 
+// TODO: Make `ext_array` macro more expressive/explicit
 ext_array!(SignatureSchemes, 2, SignatureScheme);
 ext_array!(ProtocolVersions, 1, ProtocolVersion);
 

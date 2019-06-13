@@ -1,20 +1,20 @@
-use crate::msgs::{
+use crate::{
     array::Array,
+    codec::{decoder::Decoder, encoder::Encoder, Codec},
     enums::{CipherSuite, CompressionMethod, ProtocolVersion},
     extension::{client::ClientExtension, Extensions},
     random::Random,
     session::SessionId,
-    Codec, Decoder, Encoder,
 };
 
 #[derive(Debug, Default, PartialEq)]
 pub struct ClientHelloPayload<'a> {
-    pub client_version: ProtocolVersion,
-    pub random: Random,
-    pub session_id: SessionId,
-    pub cipher_suites: Array<'a, CipherSuite>,
-    pub compression_methods: Array<'a, CompressionMethod>,
-    pub extensions: Extensions<'a, ClientExtension<'a>>,
+    client_version: ProtocolVersion,
+    random: Random,
+    session_id: SessionId,
+    cipher_suites: Array<'a, CipherSuite>,
+    compression_methods: Array<'a, CompressionMethod>,
+    extensions: Extensions<'a, ClientExtension<'a>>,
 }
 
 impl<'a> Codec<'a> for ClientHelloPayload<'a> {
@@ -42,7 +42,7 @@ impl<'a> Codec<'a> for ClientHelloPayload<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::msgs::{
+    use crate::{
         enums::SignatureScheme,
         extension::{ProtocolVersions, SignatureSchemes},
     };
@@ -378,7 +378,7 @@ mod tests {
             let payload = ClientHelloPayload::decode(&mut dec).unwrap();
 
             assert_eq!(payload.client_version, ProtocolVersion::TLSv1_2);
-            assert_eq!(payload.random, Random::empty());
+            assert_eq!(payload.random, Random::default());
             assert!(payload.session_id.is_empty());
             assert!(payload.cipher_suites.is_empty());
             assert!(payload.compression_methods.is_empty());

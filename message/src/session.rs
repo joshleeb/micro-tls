@@ -1,4 +1,4 @@
-use crate::msgs::{Codec, Decoder, Encoder};
+use crate::codec::{decoder::Decoder, encoder::Encoder, Codec};
 
 #[derive(Debug, Default, PartialEq)]
 pub struct SessionId {
@@ -16,15 +16,6 @@ impl SessionId {
     }
 }
 
-impl<T: AsRef<[u8]>> From<T> for SessionId {
-    fn from(bytes: T) -> Self {
-        let len = bytes.as_ref().len();
-        let mut data = [0; 32];
-        data[..len].copy_from_slice(&bytes.as_ref()[..len]);
-        Self { data, len }
-    }
-}
-
 impl<'a> Codec<'a> for SessionId {
     fn encode(&self, enc: &mut Encoder<'a>) {
         enc.push(&(self.len as u8));
@@ -39,6 +30,15 @@ impl<'a> Codec<'a> for SessionId {
 
         let bytes = dec.take(len)?;
         Some(bytes.into())
+    }
+}
+
+impl<T: AsRef<[u8]>> From<T> for SessionId {
+    fn from(bytes: T) -> Self {
+        let len = bytes.as_ref().len();
+        let mut data = [0; 32];
+        data[..len].copy_from_slice(&bytes.as_ref()[..len]);
+        Self { data, len }
     }
 }
 

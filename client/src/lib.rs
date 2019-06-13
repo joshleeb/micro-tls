@@ -4,11 +4,7 @@
 #[macro_use]
 extern crate std;
 
-use error::Result;
-use msgs::enums::ProtocolVersion;
-
-mod error;
-mod msgs;
+use mtls_message::{enums::ProtocolVersion, error::Result as TlsResult};
 
 pub struct Config {
     version: ProtocolVersion,
@@ -29,11 +25,11 @@ impl Handshake {
         Handshake { config }
     }
 
-    pub fn start(&mut self, _buf: &mut [u8]) -> Result<usize> {
+    pub fn start(&mut self, _buf: &mut [u8]) -> TlsResult<usize> {
         Ok(0)
     }
 
-    pub fn finish(&mut self, _buf: &mut [u8]) -> Result<(usize, Session)> {
+    pub fn finish(&mut self, _buf: &mut [u8]) -> TlsResult<(usize, Session)> {
         Ok((0, Session::new()))
     }
 
@@ -41,7 +37,7 @@ impl Handshake {
         false
     }
 
-    pub fn read(&mut self, _buf: &[u8]) -> Result<()> {
+    pub fn read(&mut self, _buf: &[u8]) -> TlsResult<()> {
         Ok(())
     }
 }
@@ -53,11 +49,11 @@ impl Session {
         Session {}
     }
 
-    fn encrypt(&mut self, _buf: &mut [u8]) -> Result<usize> {
+    fn encrypt(&mut self, _buf: &mut [u8]) -> TlsResult<usize> {
         Ok(0)
     }
 
-    fn decrypt(&mut self, _buf: &mut [u8]) -> Result<usize> {
+    fn decrypt(&mut self, _buf: &mut [u8]) -> TlsResult<usize> {
         Ok(0)
     }
 }

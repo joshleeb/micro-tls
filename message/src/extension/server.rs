@@ -1,6 +1,6 @@
-use crate::msgs::{
+use crate::{
+    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized},
     enums::{ExtensionType, ProtocolVersion},
-    Codec, CodecSized, Decoder, Encoder,
 };
 
 // TODO: Add unknown server extension
@@ -10,14 +10,14 @@ pub enum ServerExtension {
 }
 
 impl ServerExtension {
-    pub fn ty(&self) -> ExtensionType {
+    fn ty(&self) -> ExtensionType {
         match self {
             ServerExtension::SupportedVersions(_) => ExtensionType::SupportedVersions,
         }
     }
 
     // TODO: Document this.
-    pub fn ext_size(&self) -> usize {
+    fn ext_size(&self) -> usize {
         match self {
             ServerExtension::SupportedVersions(ref r) => r.data_size(),
         }
@@ -72,14 +72,14 @@ pub enum ServerRetryExtension {
 }
 
 impl ServerRetryExtension {
-    pub fn ty(&self) -> ExtensionType {
+    fn ty(&self) -> ExtensionType {
         match self {
             ServerRetryExtension::SupportedVersions(_) => ExtensionType::SupportedVersions,
         }
     }
 
     // TODO: Document this.
-    pub fn ext_size(&self) -> usize {
+    fn ext_size(&self) -> usize {
         match self {
             ServerRetryExtension::SupportedVersions(ref r) => r.data_size(),
         }
