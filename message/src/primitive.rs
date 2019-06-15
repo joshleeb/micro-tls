@@ -1,4 +1,4 @@
-use crate::codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized};
+use crate::codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize};
 use core::{mem, u16, u8};
 
 impl<'a> Codec<'a> for u8 {
@@ -12,7 +12,7 @@ impl<'a> Codec<'a> for u8 {
 }
 
 impl<'a> CodecSized<'a> for u8 {
-    const HEADER_SIZE: usize = mem::size_of::<Self>();
+    const HEADER_SIZE: HeaderSize = HeaderSize::U8;
 
     fn data_size(&self) -> usize {
         mem::size_of::<Self>()
@@ -32,7 +32,7 @@ impl<'a> Codec<'a> for u16 {
 }
 
 impl<'a> CodecSized<'a> for u16 {
-    const HEADER_SIZE: usize = mem::size_of::<Self>();
+    const HEADER_SIZE: HeaderSize = HeaderSize::U16;
 
     fn data_size(&self) -> usize {
         mem::size_of::<Self>()

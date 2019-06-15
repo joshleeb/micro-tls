@@ -1,4 +1,4 @@
-use core::{u16, u8};
+use core::{mem, u16, u8};
 use decoder::Decoder;
 use encoder::Encoder;
 
@@ -16,40 +16,63 @@ pub trait Codec<'a>: Sized {
 ///
 /// TODO: CodecSized tests
 pub trait CodecSized<'a>: Codec<'a> {
-    // TODO: Replace usize with enum to remove the unimplemented catch all in the match statements.
-    // How many bytes should data_size() be put into?
-    const HEADER_SIZE: usize;
+    const HEADER_SIZE: HeaderSize;
 
     // How many bytes when this is encoded?
     fn data_size(&self) -> usize;
 
     fn encode_len(&self, enc: &mut Encoder<'a>) {
-        match Self::HEADER_SIZE {
-            0 => {}
-            1 => self.encode_u8(enc),
-            2 => self.encode_u16(enc),
-            _ => unimplemented!(),
-        }
+        Self::HEADER_SIZE.encode_len(self.data_size(), enc)
     }
 
     fn decode_len(dec: &mut Decoder<'a>) -> Option<usize> {
-        match Self::HEADER_SIZE {
-            0 => None,
-            1 => u8::decode(dec).map(usize::from),
-            2 => u16::decode(dec).map(usize::from),
-            _ => unimplemented!(),
+        Self::HEADER_SIZE.decode_len(dec)
+    }
+}
+
+/// Size of the header of an encoded [`Array`](crate::array::Array) of items that implement
+/// [`CodcSized`].
+pub enum HeaderSize {
+    /// No header.
+    Zero,
+    /// 1 byte header.
+    U8,
+    /// 2 byte header.
+    U16,
+}
+
+impl HeaderSize {
+    pub fn size(&self) -> usize {
+        match self {
+            HeaderSize::U8 => mem::size_of::<u8>(),
+            HeaderSize::U16 => mem::size_of::<u16>(),
+            HeaderSize::Zero => 0,
         }
     }
 
-    fn encode_u8(&self, enc: &mut Encoder<'a>) {
-        let n_bytes = self.data_size();
-        debug_assert!(n_bytes <= usize::from(u8::MAX));
-        (n_bytes as u8).encode(enc);
+    fn encode_len<'a>(&self, len: usize, enc: &mut Encoder<'a>) {
+        match self {
+            HeaderSize::U8 => HeaderSize::as_u8(len).encode(enc),
+            HeaderSize::U16 => HeaderSize::as_u16(len).encode(enc),
+            HeaderSize::Zero => {}
+        }
     }
 
-    fn encode_u16(&self, enc: &mut Encoder<'a>) {
-        let n_bytes = self.data_size();
-        debug_assert!(n_bytes <= usize::from(u16::MAX));
-        (n_bytes as u16).encode(enc);
+    fn decode_len<'a>(&self, dec: &mut Decoder<'a>) -> Option<usize> {
+        match self {
+            HeaderSize::U8 => u8::decode(dec).map(usize::from),
+            HeaderSize::U16 => u16::decode(dec).map(usize::from),
+            HeaderSize::Zero => None,
+        }
+    }
+
+    fn as_u8(data: usize) -> u8 {
+        debug_assert!(data <= usize::from(u8::MAX));
+        data as u8
+    }
+
+    fn as_u16(data: usize) -> u16 {
+        debug_assert!(data <= usize::from(u16::MAX));
+        data as u16
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     array::{iter::ArrayIter, Array},
-    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized},
+    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize},
     enums::{ProtocolVersion, SignatureScheme},
 };
 use client::ClientExtension;
@@ -80,8 +80,8 @@ where
 }
 
 // TODO: Make `ext_array` macro more expressive/explicit
-ext_array!(SignatureSchemes, 2, SignatureScheme);
-ext_array!(ProtocolVersions, 1, ProtocolVersion);
+ext_array!(SignatureSchemes, HeaderSize::U16, SignatureScheme);
+ext_array!(ProtocolVersions, HeaderSize::U8, ProtocolVersion);
 
 #[cfg(test)]
 mod tests {

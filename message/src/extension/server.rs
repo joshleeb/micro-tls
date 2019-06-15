@@ -1,5 +1,5 @@
 use crate::{
-    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized},
+    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize},
     enums::{ExtensionType, ProtocolVersion},
 };
 
@@ -52,10 +52,10 @@ impl<'a> Codec<'a> for ServerExtension {
 }
 
 impl<'a> CodecSized<'a> for ServerExtension {
-    const HEADER_SIZE: usize = 2;
+    const HEADER_SIZE: HeaderSize = HeaderSize::U16;
 
     fn data_size(&self) -> usize {
-        Self::HEADER_SIZE + self.ty().data_size() + self.ext_size()
+        Self::HEADER_SIZE.size() + self.ty().data_size() + self.ext_size()
     }
 }
 
@@ -114,10 +114,10 @@ impl<'a> Codec<'a> for ServerRetryExtension {
 }
 
 impl<'a> CodecSized<'a> for ServerRetryExtension {
-    const HEADER_SIZE: usize = 2;
+    const HEADER_SIZE: HeaderSize = HeaderSize::U16;
 
     fn data_size(&self) -> usize {
-        Self::HEADER_SIZE + self.ty().data_size() + self.ext_size()
+        Self::HEADER_SIZE.size() + self.ty().data_size() + self.ext_size()
     }
 }
 

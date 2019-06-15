@@ -43,7 +43,7 @@ macro_rules! msg_enum {
         }
 
         impl<'a> crate::codec::CodecSized<'a> for $ident {
-            const HEADER_SIZE: usize = <$ty>::HEADER_SIZE;
+            const HEADER_SIZE: crate::codec::HeaderSize = <$ty>::HEADER_SIZE;
 
             fn data_size(&self) -> usize {
                 <$ty>::data_size(&0)

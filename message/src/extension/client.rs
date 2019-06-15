@@ -1,6 +1,6 @@
 use crate::{
     array::Array,
-    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized},
+    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize},
     enums::{ExtensionType, ProtocolVersion, SignatureScheme},
     extension::{ProtocolVersions, SignatureSchemes},
 };
@@ -24,10 +24,10 @@ impl<'a> ClientExtension<'a> {
     fn ext_size(&self) -> usize {
         match self {
             ClientExtension::SignatureAlgorithms(ref r) => {
-                SignatureSchemes::HEADER_SIZE + r.data_size()
+                SignatureSchemes::HEADER_SIZE.size() + r.data_size()
             }
             ClientExtension::SupportedVersions(ref r) => {
-                ProtocolVersions::HEADER_SIZE + r.data_size()
+                ProtocolVersions::HEADER_SIZE.size() + r.data_size()
             }
         }
     }
@@ -65,10 +65,10 @@ impl<'a> Codec<'a> for ClientExtension<'a> {
 }
 
 impl<'a> CodecSized<'a> for ClientExtension<'a> {
-    const HEADER_SIZE: usize = 2;
+    const HEADER_SIZE: HeaderSize = HeaderSize::U16;
 
     fn data_size(&self) -> usize {
-        Self::HEADER_SIZE + self.ty().data_size() + self.ext_size()
+        Self::HEADER_SIZE.size() + self.ty().data_size() + self.ext_size()
     }
 }
 

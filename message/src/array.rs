@@ -1,4 +1,4 @@
-use crate::codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized};
+use crate::codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize};
 use iter::ArrayIter;
 
 #[macro_use]
@@ -63,7 +63,7 @@ impl<'a, T: CodecSized<'a>> Codec<'a> for Array<'a, T> {
 }
 
 impl<'a, T: CodecSized<'a>> CodecSized<'a> for Array<'a, T> {
-    const HEADER_SIZE: usize = T::HEADER_SIZE;
+    const HEADER_SIZE: HeaderSize = T::HEADER_SIZE;
 
     fn data_size(&self) -> usize {
         match self {

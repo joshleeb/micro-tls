@@ -32,7 +32,7 @@ macro_rules! ext_array {
         }
 
         impl<'a> crate::codec::CodecSized<'a> for $ident<'a> {
-            const HEADER_SIZE: usize = $header_size;
+            const HEADER_SIZE: crate::codec::HeaderSize = $header_size;
 
             fn data_size(&self) -> usize {
                 self.0.data_size()
