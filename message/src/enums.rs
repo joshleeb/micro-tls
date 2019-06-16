@@ -2,6 +2,30 @@
 mod macros;
 
 msg_enum! {
+    HandshakeType, u8;
+    {
+        HelloRequest => 0x00,
+        ClientHello => 0x01,
+        ServerHello => 0x02,
+        NewSessionTicket => 0x04,
+        EndOfEarlyData => 0x05,
+        HelloRetryRequest => 0x06,
+        EncryptedExtensions => 0x08,
+        Certificate => 0x0b,
+        ServerKeyExchange => 0x0c,
+        CertificateRequest => 0x0d,
+        ServerHelloDone => 0x0e,
+        CertificateVerify => 0x0f,
+        ClientKeyExchange => 0x10,
+        Finished => 0x14,
+        CertificateURL => 0x15,
+        CertificateStatus => 0x16,
+        KeyUpdate => 0x18,
+        MessageHash => 0xfe,
+    }
+}
+
+msg_enum! {
     ProtocolVersion, u16;
     {
         TLSv1_2 => 0x0303,
