@@ -1,4 +1,4 @@
-use crate::codec::{decoder::Decoder, encoder::Encoder, Codec};
+use crate::codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize};
 
 #[derive(Debug, Default, PartialEq)]
 pub struct SessionId {
@@ -30,6 +30,14 @@ impl<'a> Codec<'a> for SessionId {
 
         let bytes = dec.take(len)?;
         Some(bytes.into())
+    }
+}
+
+impl<'a> CodecSized<'a> for SessionId {
+    const HEADER_SIZE: HeaderSize = HeaderSize::Zero;
+
+    fn data_size(&self) -> usize {
+        u8::data_size(&0) + self.len
     }
 }
 

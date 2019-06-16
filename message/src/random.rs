@@ -1,4 +1,4 @@
-use crate::codec::{decoder::Decoder, encoder::Encoder, Codec};
+use crate::codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize};
 
 #[derive(Debug, Default, PartialEq)]
 pub struct Random([u8; 32]);
@@ -14,6 +14,14 @@ impl<'a> Codec<'a> for Random {
         opaque.clone_from_slice(bytes);
 
         Some(Random(opaque))
+    }
+}
+
+impl<'a> CodecSized<'a> for Random {
+    const HEADER_SIZE: HeaderSize = HeaderSize::Zero;
+
+    fn data_size(&self) -> usize {
+        self.0.len()
     }
 }
 
