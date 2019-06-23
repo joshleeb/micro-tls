@@ -97,6 +97,6 @@ impl<'a> CodecSized<'a> for u32 {
     const HEADER_SIZE: HeaderSize = HeaderSize::U32;
 
     fn data_size(&self) -> usize {
-        3
+        4
     }
 }

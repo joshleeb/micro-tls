@@ -1,10 +1,7 @@
 use crate::{
-    codec::{decoder::Decoder, encoder::Encoder, Codec},
+    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize},
     enums::{CipherSuite, CompressionMethod, ProtocolVersion},
-    extension::{
-        server::{ServerExtension, ServerRetryExtension},
-        Extensions,
-    },
+    extension::{server::ServerExtension, Extensions},
     random::Random,
     session::SessionId,
 };
@@ -41,49 +38,16 @@ impl<'a> Codec<'a> for ServerHelloPayload<'a> {
     }
 }
 
-static SERVER_HELLO_RETRY_RANDOM: [u8; 32] = [
-    0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91,
-    0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c,
-];
+impl<'a> CodecSized<'a> for ServerHelloPayload<'a> {
+    const HEADER_SIZE: HeaderSize = HeaderSize::U24;
 
-#[derive(Debug, Default, PartialEq)]
-pub struct ServerHelloRetryPayload<'a> {
-    server_version: ProtocolVersion,
-    session_id: SessionId,
-    cipher_suite: CipherSuite,
-    extensions: Extensions<'a, ServerRetryExtension>,
-}
-
-impl<'a> Codec<'a> for ServerHelloRetryPayload<'a> {
-    fn encode(&self, enc: &mut Encoder<'a>) {
-        let random = Random::from(SERVER_HELLO_RETRY_RANDOM);
-        let compression_method = CompressionMethod::Null;
-
-        self.server_version.encode(enc);
-        random.encode(enc);
-        self.session_id.encode(enc);
-        self.cipher_suite.encode(enc);
-        compression_method.encode(enc);
-        self.extensions.encode_extensions(enc);
-    }
-
-    fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
-        let server_version = ProtocolVersion::decode(dec)?;
-        let random = Random::decode(dec)?;
-        let session_id = SessionId::decode(dec)?;
-        let cipher_suite = CipherSuite::decode(dec)?;
-        let compression_method = CompressionMethod::decode(dec)?;
-        let extensions = Extensions::decode(dec)?;
-
-        if compression_method != CompressionMethod::Null || random != SERVER_HELLO_RETRY_RANDOM {
-            return None;
-        }
-        Some(ServerHelloRetryPayload {
-            server_version,
-            session_id,
-            cipher_suite,
-            extensions,
-        })
+    fn data_size(&self) -> usize {
+        self.server_version.data_size()
+            + self.random.data_size()
+            + self.session_id.data_size()
+            + self.cipher_suite.data_size()
+            + self.compression_method.data_size()
+            + self.extensions.data_size()
     }
 }
 
@@ -95,10 +59,8 @@ mod tests {
             codec::Codec as r_Codec,
             enums::Compression as r_Compression,
             handshake::{
-                HelloRetryExtension as r_HelloRetryExtension,
-                HelloRetryRequest as r_HelloRetryRequest, Random as r_Random,
-                ServerExtension as r_ServerExtension, ServerHelloPayload as r_ServerHelloPayload,
-                SessionID as r_SessionId,
+                Random as r_Random, ServerExtension as r_ServerExtension,
+                ServerHelloPayload as r_ServerHelloPayload, SessionID as r_SessionId,
             },
         },
         CipherSuite as r_CipherSuite, ProtocolVersion as r_ProtocolVersion,
@@ -175,55 +137,6 @@ mod tests {
                     cipher_suite: r_CipherSuite::TLS13_AES_128_GCM_SHA256,
                     compression_method: r_Compression::Null,
                     extensions: vec![r_ServerExtension::SupportedVersions(
-                        r_ProtocolVersion::TLSv1_3,
-                    )],
-                }),
-            )
-        }
-
-        #[test]
-        fn empty_retry() {
-            assert_eq!(
-                embed_bytes(ServerHelloRetryPayload::default()),
-                rustls_bytes(r_HelloRetryRequest {
-                    legacy_version: r_ProtocolVersion::TLSv1_2,
-                    session_id: r_SessionId::empty(),
-                    cipher_suite: r_CipherSuite::TLS13_AES_128_GCM_SHA256,
-                    extensions: vec![],
-                }),
-            )
-        }
-
-        #[test]
-        fn retry_session_id() {
-            assert_eq!(
-                embed_bytes(ServerHelloRetryPayload {
-                    session_id: [97, 98, 99].into(),
-                    ..Default::default()
-                }),
-                rustls_bytes(r_HelloRetryRequest {
-                    legacy_version: r_ProtocolVersion::TLSv1_2,
-                    session_id: r_SessionId::new(&[97, 98, 99]),
-                    cipher_suite: r_CipherSuite::TLS13_AES_128_GCM_SHA256,
-                    extensions: vec![],
-                }),
-            )
-        }
-
-        #[test]
-        fn retry_extension_protocol_version() {
-            assert_eq!(
-                embed_bytes(ServerHelloRetryPayload {
-                    extensions: Extensions::from(arr![ServerRetryExtension::from(
-                        ProtocolVersion::TLSv1_3,
-                    )]),
-                    ..Default::default()
-                }),
-                rustls_bytes(r_HelloRetryRequest {
-                    legacy_version: r_ProtocolVersion::TLSv1_2,
-                    session_id: r_SessionId::empty(),
-                    cipher_suite: r_CipherSuite::TLS13_AES_128_GCM_SHA256,
-                    extensions: vec![r_HelloRetryExtension::SupportedVersions(
                         r_ProtocolVersion::TLSv1_3,
                     )],
                 }),
@@ -307,56 +220,6 @@ mod tests {
                 Extensions::from(arr![ServerExtension::from(ProtocolVersion::TLSv1_3)]),
             );
         }
-
-        #[test]
-        fn empty_retry() {
-            let bytes = rustls_bytes(r_HelloRetryRequest {
-                legacy_version: r_ProtocolVersion::TLSv1_2,
-                session_id: r_SessionId::empty(),
-                cipher_suite: r_CipherSuite::TLS13_AES_128_GCM_SHA256,
-                extensions: vec![],
-            });
-            let mut dec = Decoder::new(&bytes);
-            let payload = ServerHelloRetryPayload::decode(&mut dec).unwrap();
-
-            assert_eq!(payload.server_version, ProtocolVersion::TLSv1_2);
-            assert!(payload.session_id.is_empty());
-            assert_eq!(payload.cipher_suite, CipherSuite::TlsAes128GcmSha256);
-            assert!(payload.extensions.is_empty());
-        }
-
-        #[test]
-        fn retry_session_id() {
-            let bytes = rustls_bytes(r_HelloRetryRequest {
-                legacy_version: r_ProtocolVersion::TLSv1_2,
-                session_id: r_SessionId::new(&[97, 98, 99]),
-                cipher_suite: r_CipherSuite::TLS13_AES_128_GCM_SHA256,
-                extensions: vec![],
-            });
-            let mut dec = Decoder::new(&bytes);
-            let payload = ServerHelloRetryPayload::decode(&mut dec).unwrap();
-
-            assert_eq!(payload.session_id, [97, 98, 99].into());
-        }
-
-        #[test]
-        fn retry_extension_protocol_version() {
-            let bytes = rustls_bytes(r_HelloRetryRequest {
-                legacy_version: r_ProtocolVersion::TLSv1_2,
-                session_id: r_SessionId::new(&[]),
-                cipher_suite: r_CipherSuite::TLS13_AES_128_GCM_SHA256,
-                extensions: vec![r_HelloRetryExtension::SupportedVersions(
-                    r_ProtocolVersion::TLSv1_3,
-                )],
-            });
-            let mut dec = Decoder::new(&bytes);
-            let payload = ServerHelloRetryPayload::decode(&mut dec).unwrap();
-
-            assert_eq!(
-                payload.extensions,
-                Extensions::from(arr![ServerRetryExtension::from(ProtocolVersion::TLSv1_3)]),
-            );
-        }
     }
 
     fn rustls_bytes<T: r_Codec>(payload: T) -> Vec<u8> {
@@ -365,9 +228,11 @@ mod tests {
         enc
     }
 
-    fn embed_bytes<'a, T: Codec<'a>>(payload: T) -> Vec<u8> {
+    fn embed_bytes<'a, T: CodecSized<'a>>(payload: T) -> Vec<u8> {
         let mut enc = Encoder::new(vec![]);
         payload.encode(&mut enc);
+        assert_eq!(enc.bytes().len(), payload.data_size());
+
         enc.bytes().into()
     }
 }

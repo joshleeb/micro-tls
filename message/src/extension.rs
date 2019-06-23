@@ -4,7 +4,7 @@ use crate::{
     enums::{ProtocolVersion, SignatureScheme},
 };
 use client::ClientExtension;
-use server::{ServerExtension, ServerRetryExtension};
+use server::ServerExtension;
 
 pub mod client;
 pub mod server;
@@ -46,6 +46,17 @@ impl<'a, T: CodecSized<'a>> Codec<'a> for Extensions<'a, T> {
     }
 }
 
+impl<'a, T: CodecSized<'a>> CodecSized<'a> for Extensions<'a, T> {
+    const HEADER_SIZE: HeaderSize = HeaderSize::Zero;
+
+    fn data_size(&self) -> usize {
+        if self.0.is_empty() {
+            return 0;
+        }
+        T::HEADER_SIZE.size() + self.0.data_size()
+    }
+}
+
 impl<'a, T: CodecSized<'a>> Default for Extensions<'a, T> {
     fn default() -> Self {
         Self::empty()
@@ -64,15 +75,6 @@ where
 impl<'a, T> From<T> for Extensions<'a, ServerExtension>
 where
     T: Into<Array<'a, ServerExtension>>,
-{
-    fn from(data: T) -> Self {
-        Self(data.into())
-    }
-}
-
-impl<'a, T> From<T> for Extensions<'a, ServerRetryExtension>
-where
-    T: Into<Array<'a, ServerRetryExtension>>,
 {
     fn from(data: T) -> Self {
         Self(data.into())

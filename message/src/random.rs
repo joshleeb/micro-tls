@@ -41,6 +41,12 @@ impl From<[u8; 32]> for Random {
 mod tests {
     use super::*;
 
+    #[test]
+    fn data_size() {
+        let random = Random::default();
+        assert_eq!(random.data_size(), 32);
+    }
+
     mod encode {
         use super::*;
 

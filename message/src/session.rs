@@ -37,7 +37,8 @@ impl<'a> CodecSized<'a> for SessionId {
     const HEADER_SIZE: HeaderSize = HeaderSize::Zero;
 
     fn data_size(&self) -> usize {
-        u8::data_size(&0) + self.len
+        assert!(self.len <= 32);
+        u8::data_size(&(self.len as u8)) + self.len
     }
 }
 
@@ -53,6 +54,18 @@ impl<T: AsRef<[u8]>> From<T> for SessionId {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn empty_data_size() {
+        let session_id = SessionId::empty();
+        assert_eq!(session_id.data_size(), 1);
+    }
+
+    #[test]
+    fn data_size() {
+        let session_id = SessionId::from([97, 98, 99]);
+        assert_eq!(session_id.data_size(), 4);
+    }
 
     mod encode {
         use super::*;

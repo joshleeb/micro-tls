@@ -1,6 +1,6 @@
 use crate::{
     array::Array,
-    codec::{decoder::Decoder, encoder::Encoder, Codec},
+    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize},
     enums::{CipherSuite, CompressionMethod, ProtocolVersion},
     extension::{client::ClientExtension, Extensions},
     random::Random,
@@ -36,6 +36,21 @@ impl<'a> Codec<'a> for ClientHelloPayload<'a> {
             compression_methods: Array::decode(dec)?,
             extensions: Extensions::decode(dec)?,
         })
+    }
+}
+
+impl<'a> CodecSized<'a> for ClientHelloPayload<'a> {
+    const HEADER_SIZE: HeaderSize = HeaderSize::U24;
+
+    fn data_size(&self) -> usize {
+        self.client_version.data_size()
+            + self.random.data_size()
+            + self.session_id.data_size()
+            + CipherSuite::HEADER_SIZE.size()
+            + self.cipher_suites.data_size()
+            + CompressionMethod::HEADER_SIZE.size()
+            + self.compression_methods.data_size()
+            + self.extensions.data_size()
     }
 }
 
@@ -672,6 +687,8 @@ mod tests {
     fn embed_bytes(payload: ClientHelloPayload) -> Vec<u8> {
         let mut enc = Encoder::new(vec![]);
         payload.encode(&mut enc);
+        assert_eq!(enc.bytes().len(), payload.data_size());
+
         enc.bytes().into()
     }
 }
