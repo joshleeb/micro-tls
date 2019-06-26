@@ -1,7 +1,4 @@
-use crate::{
-    array::item::Item,
-    codec::{decoder::Decoder, Codec},
-};
+use crate::codec::{array::item::Item, decoder::Decoder, Codec};
 use core::{marker::PhantomData, slice};
 
 pub enum ArrayIter<'a, T: Codec<'a>> {

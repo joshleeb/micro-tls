@@ -1,4 +1,4 @@
-use crate::codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize};
+use crate::codec::{Codec, CodecSized, Decoder, Encoder, HeaderSize};
 
 #[derive(Debug, Default, PartialEq)]
 pub struct SessionId {

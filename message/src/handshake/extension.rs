@@ -1,7 +1,9 @@
 use crate::{
-    array::{iter::ArrayIter, Array},
-    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize},
-    enums::{ProtocolVersion, SignatureScheme},
+    codec::{
+        array::{iter::ArrayIter, Array},
+        Codec, CodecSized, Decoder, Encoder, HeaderSize,
+    },
+    handshake::enums::{ProtocolVersion, SignatureScheme},
 };
 use client::ClientExtension;
 use server::ServerExtension;

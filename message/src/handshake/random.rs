@@ -1,4 +1,4 @@
-use crate::codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize};
+use crate::codec::{Codec, CodecSized, Decoder, Encoder, HeaderSize};
 
 #[derive(Debug, Default, PartialEq)]
 pub struct Random([u8; 32]);
@@ -9,7 +9,7 @@ impl<'a> Codec<'a> for Random {
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
-        let bytes = dec.take(32)?.clone();
+        let bytes = dec.take(32)?;
         let mut opaque = [0; 32];
         opaque.clone_from_slice(bytes);
 

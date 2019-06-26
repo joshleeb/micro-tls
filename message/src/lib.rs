@@ -5,13 +5,7 @@
 extern crate std;
 
 #[macro_use]
-pub mod array;
+pub(crate) mod codec;
 
-pub mod codec;
-pub mod enums;
 pub mod error;
-pub mod extension;
 pub mod handshake;
-pub mod primitive;
-pub mod random;
-pub mod session;

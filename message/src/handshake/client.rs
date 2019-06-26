@@ -1,10 +1,11 @@
 use crate::{
-    array::Array,
-    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize},
-    enums::{CipherSuite, CompressionMethod, ProtocolVersion},
-    extension::{client::ClientExtension, Extensions},
-    random::Random,
-    session::SessionId,
+    codec::{array::Array, Codec, CodecSized, Decoder, Encoder, HeaderSize},
+    handshake::{
+        enums::{CipherSuite, CompressionMethod, ProtocolVersion},
+        extension::{client::ClientExtension, Extensions},
+        random::Random,
+        session::SessionId,
+    },
 };
 
 #[derive(Debug, Default, PartialEq)]
@@ -57,7 +58,7 @@ impl<'a> CodecSized<'a> for ClientHelloPayload<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
+    use crate::handshake::{
         enums::SignatureScheme,
         extension::{ProtocolVersions, SignatureSchemes},
     };

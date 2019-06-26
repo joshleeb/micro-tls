@@ -1,8 +1,9 @@
 use crate::{
-    array::Array,
-    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize},
-    enums::{ExtensionType, ProtocolVersion, SignatureScheme},
-    extension::{ProtocolVersions, SignatureSchemes},
+    codec::{array::Array, Codec, CodecSized, Decoder, Encoder, HeaderSize},
+    handshake::{
+        enums::{ExtensionType, ProtocolVersion, SignatureScheme},
+        extension::{ProtocolVersions, SignatureSchemes},
+    },
 };
 
 // TODO: Add unknown client extension
@@ -99,7 +100,7 @@ impl<'a> From<ProtocolVersions<'a>> for ClientExtension<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::extension::{ProtocolVersions, SignatureSchemes};
+    use crate::handshake::extension::{ProtocolVersions, SignatureSchemes};
 
     mod encode {
         use super::*;

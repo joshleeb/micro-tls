@@ -37,11 +37,15 @@ impl<'a, T: CodecSized<'a>> Array<'a, T> {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub fn len(&self) -> usize {
         match self {
-            Array::Typed(t) => t.len() == 0,
-            Array::Bytes(b) => b.len() == 0,
+            Array::Typed(t) => t.len(),
+            Array::Bytes(b) => b.len(),
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 
@@ -87,9 +91,14 @@ impl<'a, T: CodecSized<'a>> From<&'a [T]> for Array<'a, T> {
 
 impl<'a, T: PartialEq + CodecSized<'a>> PartialEq for Array<'a, T> {
     fn eq(&self, other: &Self) -> bool {
-        self.iter().zip(other.iter()).all(|(a, b)| a == b)
+        match (self, other) {
+            (Array::Typed(t1), Array::Typed(t2)) => t1 == t2,
+            (Array::Bytes(b1), Array::Bytes(b2)) => b1 == b2,
+            _ => self.iter().zip(other.iter()).all(|(a, b)| a == b),
+        }
     }
 }
+impl<'a, T: PartialEq + CodecSized<'a>> Eq for Array<'a, T> {}
 
 #[cfg(test)]
 mod tests {
@@ -123,6 +132,59 @@ mod tests {
         let items: Array<'_, u16> = Array::Bytes(&[0, 7, 0, 8, 0, 9]);
 
         assert_eq!(items.iter().collect::<Vec<Item<'_, u16>>>(), vec![7, 8, 9]);
+    }
+
+    #[test]
+    fn array_empty_eq() {
+        assert_eq!(Array::<u32>::default(), Array::<u32>::default());
+    }
+
+    #[test]
+    fn array_typed_eq() {
+        assert_eq!(
+            Array::<u32>::Typed(&[1, 2, 3]),
+            Array::<u32>::Typed(&[1, 2, 3])
+        );
+    }
+
+    #[test]
+    fn array_typed_ne() {
+        assert_ne!(
+            Array::<u32>::Typed(&[1, 2, 3]),
+            Array::<u32>::Typed(&[4, 5, 6])
+        );
+    }
+
+    #[test]
+    fn array_bytes_eq() {
+        assert_eq!(
+            Array::<u8>::Bytes(&[1, 2, 3]),
+            Array::<u8>::Bytes(&[1, 2, 3])
+        );
+    }
+
+    #[test]
+    fn array_bytes_ne() {
+        assert_ne!(
+            Array::<u8>::Bytes(&[1, 2, 3]),
+            Array::<u8>::Bytes(&[4, 5, 6])
+        );
+    }
+
+    #[test]
+    fn array_mixed_eq() {
+        assert_eq!(
+            Array::<u16>::Typed(&[1, 2, 3]),
+            Array::<u16>::Bytes(&[0, 1, 0, 2, 0, 3])
+        );
+    }
+
+    #[test]
+    fn array_mixed_ne() {
+        assert_ne!(
+            Array::<u16>::Typed(&[1, 2, 3]),
+            Array::<u16>::Bytes(&[0, 4, 0, 5, 0, 6])
+        );
     }
 
     mod encode {

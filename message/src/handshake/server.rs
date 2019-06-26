@@ -1,9 +1,11 @@
 use crate::{
-    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize},
-    enums::{CipherSuite, CompressionMethod, ProtocolVersion},
-    extension::{server::ServerExtension, Extensions},
-    random::Random,
-    session::SessionId,
+    codec::{Codec, CodecSized, Decoder, Encoder, HeaderSize},
+    handshake::{
+        enums::{CipherSuite, CompressionMethod, ProtocolVersion},
+        extension::{server::ServerExtension, Extensions},
+        random::Random,
+        session::SessionId,
+    },
 };
 
 #[derive(Debug, Default, PartialEq)]

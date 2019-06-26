@@ -1,6 +1,6 @@
 use crate::{
-    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize},
-    enums::{ExtensionType, ProtocolVersion},
+    codec::{Codec, CodecSized, Decoder, Encoder, HeaderSize},
+    handshake::enums::{ExtensionType, ProtocolVersion},
 };
 
 // TODO: Add unknown server extension
