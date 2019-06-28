@@ -1,9 +1,12 @@
-use crate::codec::{decoder::Decoder, encoder::Encoder, header::HeaderSize, Codec, CodecSized};
+use crate::{
+    codec::{decoder::Decoder, encoder::Encoder, header::HeaderSize, Codec, CodecSized},
+    error::Result as TlsResult,
+};
 use core::{u16, u32, u8};
 
 impl<'a> Codec<'a> for u8 {
-    fn encode(&self, enc: &mut Encoder<'a>) {
-        enc.push(self);
+    fn encode(&self, enc: &mut Encoder<'a>) -> TlsResult<()> {
+        enc.push(*self)
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
@@ -20,8 +23,8 @@ impl<'a> CodecSized<'a> for u8 {
 }
 
 impl<'a> Codec<'a> for u16 {
-    fn encode(&self, enc: &mut Encoder<'a>) {
-        enc.append([(*self >> 8) as u8, *self as u8]);
+    fn encode(&self, enc: &mut Encoder<'a>) -> TlsResult<()> {
+        enc.append([(*self >> 8) as u8, *self as u8])
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
@@ -49,8 +52,8 @@ impl u24 {
 }
 
 impl<'a> Codec<'a> for u24 {
-    fn encode(&self, enc: &mut Encoder<'a>) {
-        enc.append([(self.0 >> 16) as u8, (self.0 >> 8) as u8, self.0 as u8]);
+    fn encode(&self, enc: &mut Encoder<'a>) -> TlsResult<()> {
+        enc.append([(self.0 >> 16) as u8, (self.0 >> 8) as u8, self.0 as u8])
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
@@ -74,13 +77,13 @@ impl From<u32> for u24 {
 }
 
 impl<'a> Codec<'a> for u32 {
-    fn encode(&self, enc: &mut Encoder<'a>) {
+    fn encode(&self, enc: &mut Encoder<'a>) -> TlsResult<()> {
         enc.append([
             (*self >> 24) as u8,
             (*self >> 16) as u8,
             (*self >> 8) as u8,
             *self as u8,
-        ]);
+        ])
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
@@ -111,7 +114,7 @@ mod tests {
         #[test]
         fn u8_bytes() {
             let mut enc = Encoder::new(vec![]);
-            1u8.encode(&mut enc);
+            1u8.encode(&mut enc).unwrap();
 
             assert_eq!(enc.bytes(), [1]);
         }
@@ -119,7 +122,7 @@ mod tests {
         #[test]
         fn u16_bytes() {
             let mut enc = Encoder::new(vec![]);
-            1u16.encode(&mut enc);
+            1u16.encode(&mut enc).unwrap();
 
             assert_eq!(enc.bytes(), [0, 1]);
         }
@@ -127,7 +130,7 @@ mod tests {
         #[test]
         fn u24_bytes() {
             let mut enc = Encoder::new(vec![]);
-            u24::from(1).encode(&mut enc);
+            u24::from(1).encode(&mut enc).unwrap();
 
             assert_eq!(enc.bytes(), [0, 0, 1]);
         }
@@ -135,7 +138,7 @@ mod tests {
         #[test]
         fn u32_bytes() {
             let mut enc = Encoder::new(vec![]);
-            1u32.encode(&mut enc);
+            1u32.encode(&mut enc).unwrap();
 
             assert_eq!(enc.bytes(), [0, 0, 0, 1]);
         }

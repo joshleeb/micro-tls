@@ -1,4 +1,7 @@
-use crate::codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize};
+use crate::{
+    codec::{decoder::Decoder, encoder::Encoder, Codec, CodecSized, HeaderSize},
+    error::Result as TlsResult,
+};
 use iter::ArrayIter;
 
 #[macro_use]
@@ -18,9 +21,9 @@ impl<'a, T: CodecSized<'a>> Array<'a, T> {
         arr![]
     }
 
-    pub fn encode_items(&self, enc: &mut Encoder<'a>) {
+    pub fn encode_items(&self, enc: &mut Encoder<'a>) -> TlsResult<()> {
         match self {
-            Array::Typed(t) => t.iter().for_each(|item| item.encode(enc)),
+            Array::Typed(t) => t.iter().try_for_each(|item| item.encode(enc)),
             Array::Bytes(b) => enc.append(b),
         }
     }
@@ -50,10 +53,10 @@ impl<'a, T: CodecSized<'a>> Array<'a, T> {
 }
 
 impl<'a, T: CodecSized<'a>> Codec<'a> for Array<'a, T> {
-    fn encode(&self, enc: &mut Encoder<'a>) {
-        self.encode_len(enc);
+    fn encode(&self, enc: &mut Encoder<'a>) -> TlsResult<()> {
+        self.encode_len(enc)?;
         match self {
-            Array::Typed(t) => t.iter().for_each(|item| item.encode(enc)),
+            Array::Typed(t) => t.iter().try_for_each(|item| item.encode(enc)),
             Array::Bytes(b) => enc.append(b),
         }
     }
@@ -194,7 +197,7 @@ mod tests {
         fn empty_single_bytes_size() {
             let items: Array<'_, u8> = Array::empty();
             let mut enc = Encoder::new(vec![]);
-            items.encode(&mut enc);
+            items.encode(&mut enc).unwrap();
 
             assert_eq!(enc.bytes(), [0]);
             assert_eq!(items.data_size(), 0);
@@ -204,7 +207,7 @@ mod tests {
         fn empty_multiple_bytes_size() {
             let items: Array<'_, u16> = Array::empty();
             let mut enc = Encoder::new(vec![]);
-            items.encode(&mut enc);
+            items.encode(&mut enc).unwrap();
 
             assert_eq!(enc.bytes(), [0, 0]);
             assert_eq!(items.data_size(), 0);
@@ -214,7 +217,7 @@ mod tests {
         fn single_byte_items() {
             let items: Array<'_, u8> = Array::from([7, 8, 9].as_ref());
             let mut enc = Encoder::new(vec![]);
-            items.encode(&mut enc);
+            items.encode(&mut enc).unwrap();
 
             assert_eq!(enc.bytes(), [3, 7, 8, 9]);
             assert_eq!(items.data_size(), 3);
@@ -224,7 +227,7 @@ mod tests {
         fn multi_byte_items() {
             let items: Array<'_, u16> = Array::from([7, 8, 9].as_ref());
             let mut enc = Encoder::new(vec![]);
-            items.encode(&mut enc);
+            items.encode(&mut enc).unwrap();
 
             assert_eq!(enc.bytes(), [0, 6, 0, 7, 0, 8, 0, 9]);
             assert_eq!(items.data_size(), 6);

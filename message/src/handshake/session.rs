@@ -1,6 +1,9 @@
-use crate::codec::{Codec, CodecSized, Decoder, Encoder, HeaderSize};
+use crate::{
+    codec::{Codec, CodecSized, Decoder, Encoder, HeaderSize},
+    error::Result as TlsResult,
+};
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct SessionId {
     data: [u8; 32],
     len: usize,
@@ -17,9 +20,9 @@ impl SessionId {
 }
 
 impl<'a> Codec<'a> for SessionId {
-    fn encode(&self, enc: &mut Encoder<'a>) {
-        enc.push(&(self.len as u8));
-        enc.append(&self.data[..self.len]);
+    fn encode(&self, enc: &mut Encoder<'a>) -> TlsResult<()> {
+        enc.push(self.len as u8)?;
+        enc.append(&self.data[..self.len])
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
@@ -74,7 +77,7 @@ mod tests {
         fn empty() {
             let session_id = SessionId::empty();
             let mut enc = Encoder::new(vec![]);
-            session_id.encode(&mut enc);
+            session_id.encode(&mut enc).unwrap();
 
             assert_eq!(enc.bytes(), [0]);
         }
@@ -86,7 +89,7 @@ mod tests {
 
             let session_id = SessionId { data, len: 1 };
             let mut enc = Encoder::new(vec![]);
-            session_id.encode(&mut enc);
+            session_id.encode(&mut enc).unwrap();
 
             assert_eq!(enc.bytes(), [1, 99]);
         }
@@ -100,7 +103,7 @@ mod tests {
 
             let session_id = SessionId { data, len: 3 };
             let mut enc = Encoder::new(vec![]);
-            session_id.encode(&mut enc);
+            session_id.encode(&mut enc).unwrap();
 
             assert_eq!(enc.bytes(), [3, 99, 98, 97]);
         }

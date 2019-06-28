@@ -3,6 +3,8 @@ pub use encoder::Encoder;
 
 pub(crate) use header::HeaderSize;
 
+use crate::error::Result as TlsResult;
+
 #[macro_use]
 pub(crate) mod array;
 
@@ -14,7 +16,7 @@ mod header;
 
 /// Data that can be encoded by an [`Encoder`] and decoded by a [`Decoder`].
 pub trait Codec<'a>: Sized {
-    fn encode(&self, _enc: &mut Encoder<'a>);
+    fn encode(&self, _enc: &mut Encoder<'a>) -> TlsResult<()>;
 
     fn decode(_dec: &mut Decoder<'a>) -> Option<Self>;
 }
@@ -28,7 +30,7 @@ pub trait CodecSized<'a>: Codec<'a> {
     // How many bytes when this is encoded?
     fn data_size(&self) -> usize;
 
-    fn encode_len(&self, enc: &mut Encoder<'a>) {
+    fn encode_len(&self, enc: &mut Encoder<'a>) -> TlsResult<()> {
         Self::HEADER_SIZE.encode_len(self.data_size(), enc)
     }
 

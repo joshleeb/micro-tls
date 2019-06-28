@@ -1,5 +1,6 @@
 use crate::{
     codec::{Codec, CodecSized, Decoder, Encoder, HeaderSize},
+    error::Result as TlsResult,
     handshake::enums::{ExtensionType, ProtocolVersion},
 };
 
@@ -25,15 +26,15 @@ impl ServerExtension {
 }
 
 impl<'a> Codec<'a> for ServerExtension {
-    fn encode(&self, enc: &mut Encoder<'a>) {
-        self.ty().encode(enc);
+    fn encode(&self, enc: &mut Encoder<'a>) -> TlsResult<()> {
+        self.ty().encode(enc)?;
 
         // TODO: Document this, and use a nicer method (perhaps part of CodecSized).
-        (self.ext_size() as u16).encode(enc);
+        (self.ext_size() as u16).encode(enc)?;
 
         match self {
             ServerExtension::SupportedVersions(ref r) => r.encode(enc),
-        };
+        }
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
@@ -76,7 +77,7 @@ mod tests {
         fn supported_versions() {
             let ext = ServerExtension::from(ProtocolVersion::TLSv1_2);
             let mut enc = Encoder::new(vec![]);
-            ext.encode(&mut enc);
+            ext.encode(&mut enc).unwrap();
 
             assert_eq!(ext.data_size(), 6);
             assert_eq!(enc.bytes(), [0x00, 0x2b, 0, 2, 3, 3]);

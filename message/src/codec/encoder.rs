@@ -1,3 +1,4 @@
+use crate::error::{Error as TlsError, Result as TlsResult};
 use managed::ManagedSlice;
 
 pub struct Encoder<'a> {
@@ -14,34 +15,38 @@ impl<'a> Encoder<'a> {
         }
     }
 
-    // TODO: Encoder::push should return error instead of panic??
-    pub fn push(&mut self, byte: &u8) {
+    pub fn push(&mut self, byte: u8) -> TlsResult<()> {
         match self.bytes {
             ManagedSlice::Borrowed(_) => {
                 if self.is_full() {
-                    panic!("not enough space to push to writer");
+                    return Err(TlsError::InternalError(
+                        "not enough space to push to encoder",
+                    ));
                 }
-                self.bytes.as_mut()[self.len] = *byte;
+                self.bytes.as_mut()[self.len] = byte;
             }
             ManagedSlice::Owned(ref mut buf) => {
-                buf.push(*byte);
+                buf.push(byte);
             }
         };
         self.len += 1;
+        Ok(())
     }
 
-    // TODO: Writer::append should return error instead of panic??
     // TODO: Writer::append shouldn't need to push multiple times if using vec (maybe use managed)
-    pub fn append<B: AsRef<[u8]>>(&mut self, bytes: B) {
-        match self.bytes {
+    pub fn append<B: AsRef<[u8]>>(&mut self, bytes: B) -> TlsResult<()> {
+        let bytes_iter = match self.bytes {
             ManagedSlice::Borrowed(_) => {
                 if self.remaining() < bytes.as_ref().len() {
-                    panic!("not enough space to push to writer");
+                    return Err(TlsError::InternalError(
+                        "not enough space to push to encoder",
+                    ));
                 }
-                bytes.as_ref().iter().for_each(|b| self.push(b))
+                Ok(bytes.as_ref().iter())
             }
-            ManagedSlice::Owned(_) => bytes.as_ref().iter().for_each(|b| self.push(b)),
-        }
+            ManagedSlice::Owned(_) => Ok(bytes.as_ref().iter()),
+        };
+        bytes_iter.and_then(|mut it| it.try_for_each(|b| self.push(*b)))
     }
 
     // TODO: Encoder::remaining might make sense to be different for Vec instead of [u8]

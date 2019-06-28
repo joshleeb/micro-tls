@@ -1,11 +1,14 @@
-use crate::codec::{Codec, CodecSized, Decoder, Encoder, HeaderSize};
+use crate::{
+    codec::{Codec, CodecSized, Decoder, Encoder, HeaderSize},
+    error::Result as TlsResult,
+};
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct Random([u8; 32]);
 
 impl<'a> Codec<'a> for Random {
-    fn encode(&self, enc: &mut Encoder<'a>) {
-        enc.append(&self.0);
+    fn encode(&self, enc: &mut Encoder<'a>) -> TlsResult<()> {
+        enc.append(self.0)
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
@@ -54,7 +57,7 @@ mod tests {
         fn multiple_bytes() {
             let random = Random::default();
             let mut enc = Encoder::new(vec![]);
-            random.encode(&mut enc);
+            random.encode(&mut enc).unwrap();
 
             assert_eq!(enc.bytes(), [0; 32]);
         }

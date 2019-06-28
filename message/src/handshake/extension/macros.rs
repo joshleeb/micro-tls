@@ -19,9 +19,9 @@ macro_rules! ext_array {
         }
 
         impl<'a> crate::codec::Codec<'a> for $ident<'a> {
-            fn encode(&self, enc: &mut crate::codec::Encoder<'a>) {
-                self.encode_len(enc);
-                self.0.encode_items(enc);
+            fn encode(&self, enc: &mut crate::codec::Encoder<'a>) -> crate::error::Result<()> {
+                self.encode_len(enc)?;
+                self.0.encode_items(enc)
             }
 
             fn decode(dec: &mut crate::codec::Decoder<'a>) -> Option<Self> {

@@ -18,7 +18,7 @@ pub enum Error {
     DecryptError,
     ProtocolVersion,
     InsufficientSecurity,
-    InternalError,
+    InternalError(&'static str),
     InappropriateFallback,
     MissingExtension,
     UnsupportedExtension,

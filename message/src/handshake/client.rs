@@ -1,5 +1,6 @@
 use crate::{
     codec::{array::Array, Codec, CodecSized, Decoder, Encoder, HeaderSize},
+    error::Result as TlsResult,
     handshake::{
         enums::{CipherSuite, CompressionMethod, ProtocolVersion},
         extension::{client::ClientExtension, Extensions},
@@ -19,13 +20,13 @@ pub struct ClientHelloPayload<'a> {
 }
 
 impl<'a> Codec<'a> for ClientHelloPayload<'a> {
-    fn encode(&self, enc: &mut Encoder<'a>) {
-        self.client_version.encode(enc);
-        self.random.encode(enc);
-        self.session_id.encode(enc);
-        self.cipher_suites.encode(enc);
-        self.compression_methods.encode(enc);
-        self.extensions.encode(enc);
+    fn encode(&self, enc: &mut Encoder<'a>) -> TlsResult<()> {
+        self.client_version.encode(enc)?;
+        self.random.encode(enc)?;
+        self.session_id.encode(enc)?;
+        self.cipher_suites.encode(enc)?;
+        self.compression_methods.encode(enc)?;
+        self.extensions.encode(enc)
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
@@ -687,7 +688,7 @@ mod tests {
 
     fn embed_bytes(payload: ClientHelloPayload) -> Vec<u8> {
         let mut enc = Encoder::new(vec![]);
-        payload.encode(&mut enc);
+        payload.encode(&mut enc).unwrap();
         assert_eq!(enc.bytes().len(), payload.data_size());
 
         enc.bytes().into()

@@ -1,5 +1,6 @@
 use crate::{
     codec::{array::Array, Codec, CodecSized, Decoder, Encoder, HeaderSize},
+    error::Result as TlsResult,
     handshake::{
         enums::{ExtensionType, ProtocolVersion, SignatureScheme},
         extension::{ProtocolVersions, SignatureSchemes},
@@ -35,16 +36,16 @@ impl<'a> ClientExtension<'a> {
 }
 
 impl<'a> Codec<'a> for ClientExtension<'a> {
-    fn encode(&self, enc: &mut Encoder<'a>) {
-        self.ty().encode(enc);
+    fn encode(&self, enc: &mut Encoder<'a>) -> TlsResult<()> {
+        self.ty().encode(enc)?;
 
         // TODO: Document this, and use a nicer method (perhaps part of CodecSized).
-        (self.ext_size() as u16).encode(enc);
+        (self.ext_size() as u16).encode(enc)?;
 
         match self {
             ClientExtension::SignatureAlgorithms(ref r) => r.encode(enc),
             ClientExtension::SupportedVersions(ref r) => r.encode(enc),
-        };
+        }
     }
 
     fn decode(dec: &mut Decoder<'a>) -> Option<Self> {
@@ -109,7 +110,7 @@ mod tests {
         fn empty_signature_algorithms() {
             let ext = ClientExtension::from(SignatureSchemes::empty());
             let mut enc = Encoder::new(vec![]);
-            ext.encode(&mut enc);
+            ext.encode(&mut enc).unwrap();
 
             assert_eq!(ext.data_size(), 6);
             assert_eq!(enc.bytes(), [0x00, 0x0d, 0, 2, 0, 0]);
@@ -119,7 +120,7 @@ mod tests {
         fn single_signature_algorithm() {
             let ext = ClientExtension::from(arr![SignatureScheme::RsaPkcs1Sha256]);
             let mut enc = Encoder::new(vec![]);
-            ext.encode(&mut enc);
+            ext.encode(&mut enc).unwrap();
 
             assert_eq!(ext.data_size(), 8);
             assert_eq!(enc.bytes(), [0x00, 0x0d, 0, 4, 0, 2, 4, 1]);
@@ -132,7 +133,7 @@ mod tests {
                 SignatureScheme::EcdsaNistp256Sha256,
             ]);
             let mut enc = Encoder::new(vec![]);
-            ext.encode(&mut enc);
+            ext.encode(&mut enc).unwrap();
 
             assert_eq!(ext.data_size(), 10);
             assert_eq!(enc.bytes(), [0x00, 0x0d, 0, 6, 0, 4, 4, 1, 4, 3]);
@@ -142,7 +143,7 @@ mod tests {
         fn empty_supported_versions() {
             let ext = ClientExtension::from(ProtocolVersions::empty());
             let mut enc = Encoder::new(vec![]);
-            ext.encode(&mut enc);
+            ext.encode(&mut enc).unwrap();
 
             assert_eq!(ext.data_size(), 5);
             assert_eq!(enc.bytes(), [0x00, 0x2b, 0, 1, 0]);
@@ -152,7 +153,7 @@ mod tests {
         fn single_protocol_version() {
             let ext = ClientExtension::from(arr![ProtocolVersion::TLSv1_2]);
             let mut enc = Encoder::new(vec![]);
-            ext.encode(&mut enc);
+            ext.encode(&mut enc).unwrap();
 
             assert_eq!(ext.data_size(), 7);
             assert_eq!(enc.bytes(), [0x00, 0x2b, 0, 3, 2, 3, 3]);
@@ -163,7 +164,7 @@ mod tests {
             let ext =
                 ClientExtension::from(arr![ProtocolVersion::TLSv1_2, ProtocolVersion::TLSv1_3]);
             let mut enc = Encoder::new(vec![]);
-            ext.encode(&mut enc);
+            ext.encode(&mut enc).unwrap();
 
             assert_eq!(ext.data_size(), 9);
             assert_eq!(enc.bytes(), [0x00, 0x2b, 0, 5, 4, 3, 3, 3, 4]);

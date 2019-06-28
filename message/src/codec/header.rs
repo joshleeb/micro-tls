@@ -1,4 +1,7 @@
-use crate::codec::{decoder::Decoder, encoder::Encoder, num::u24, Codec};
+use crate::{
+    codec::{decoder::Decoder, encoder::Encoder, num::u24, Codec},
+    error::Result as TlsResult,
+};
 use core::{u16, u32, u8};
 
 /// Size of the header of an encoded [`Array`](crate::array::Array) of items that implement
@@ -27,9 +30,9 @@ impl HeaderSize {
         }
     }
 
-    pub(crate) fn encode_len<'a>(&self, len: usize, enc: &mut Encoder<'a>) {
+    pub(crate) fn encode_len<'a>(&self, len: usize, enc: &mut Encoder<'a>) -> TlsResult<()> {
         match self {
-            HeaderSize::Zero => {}
+            HeaderSize::Zero => Ok(()),
             HeaderSize::U8 => HeaderSize::as_u8(len).encode(enc),
             HeaderSize::U16 => HeaderSize::as_u16(len).encode(enc),
             HeaderSize::U24 => HeaderSize::as_u24(len).encode(enc),

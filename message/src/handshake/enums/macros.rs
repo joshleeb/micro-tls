@@ -28,8 +28,8 @@ macro_rules! msg_enum {
         }
 
         impl<'a> crate::codec::Codec<'a> for $ident {
-            fn encode(&self, enc: &mut crate::codec::Encoder<'a>) {
-                <$ty>::from(*self).encode(enc);
+            fn encode(&self, enc: &mut crate::codec::Encoder<'a>) -> crate::error::Result<()> {
+                <$ty>::from(*self).encode(enc)
             }
 
             fn decode(dec: &mut crate::codec::Decoder<'a>) -> Option<Self> {
