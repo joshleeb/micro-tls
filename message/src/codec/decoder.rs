@@ -1,4 +1,3 @@
-// TODO: Tests for Decoder.
 pub struct Decoder<'a> {
     bytes: &'a [u8],
     offset: usize,
@@ -39,5 +38,71 @@ impl<'a> Decoder<'a> {
         let prev_offset = self.offset;
         self.offset += len;
         Some(prev_offset)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn take_bytes() {
+        let bytes = [1, 2, 3];
+        let mut dec = Decoder::new(&bytes);
+        let taken_bytes = dec.take(2).unwrap();
+
+        assert_eq!(taken_bytes, [1, 2]);
+        assert_eq!(dec.offset, 2);
+    }
+
+    #[test]
+    fn taken_bytes_invalid() {
+        let bytes = [1, 2, 3];
+        let mut dec = Decoder::new(&bytes);
+        let taken_bytes = dec.take(4);
+
+        assert!(taken_bytes.is_none());
+    }
+
+    #[test]
+    fn sub_decoder() {
+        let bytes = [1, 2, 3];
+        let mut dec = Decoder::new(&bytes);
+        let sub_dec = dec.sub(2).unwrap();
+
+        assert_eq!(sub_dec.offset, 0);
+        assert_eq!(sub_dec.bytes, &[1, 2]);
+        assert_eq!(dec.offset, 2);
+    }
+
+    #[test]
+    fn sub_decoder_invalid() {
+        let bytes = [1, 2, 3];
+        let mut dec = Decoder::new(&bytes);
+        let sub_dec = dec.sub(4);
+
+        assert!(sub_dec.is_none());
+        assert_eq!(dec.offset, 0);
+    }
+
+    #[test]
+    fn bytes_reamining() {
+        let bytes = [1, 2, 3];
+        let mut dec = Decoder::new(&bytes);
+        dec.take(2).unwrap();
+
+        assert_eq!(dec.remaining(), 1);
+    }
+
+    #[test]
+    fn complete() {
+        let bytes = [1, 2, 3];
+        let mut dec = Decoder::new(&bytes);
+
+        dec.take(2).unwrap();
+        assert!(!dec.is_complete());
+
+        dec.take(1).unwrap();
+        assert!(dec.is_complete());
     }
 }
