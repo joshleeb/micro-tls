@@ -51,7 +51,11 @@ impl<'a> Encoder<'a> {
 
     // TODO: Encoder::remaining might make sense to be different for Vec instead of [u8]
     pub fn remaining(&self) -> usize {
-        self.bytes.as_ref().len() - self.len
+        let capacity = match self.bytes {
+            ManagedSlice::Borrowed(ref x) => x.len(),
+            ManagedSlice::Owned(ref x) => x.capacity(),
+        };
+        capacity - self.len
     }
 
     pub fn is_full(&self) -> bool {

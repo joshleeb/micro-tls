@@ -22,8 +22,6 @@ pub trait Codec<'a>: Sized {
 }
 
 /// Data that can be encoded and decoded as part of an [`Array`](crate::array::Array).
-///
-/// TODO: CodecSized tests
 pub trait CodecSized<'a>: Codec<'a> {
     const HEADER_SIZE: HeaderSize;
 
